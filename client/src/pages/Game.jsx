@@ -282,6 +282,7 @@ export default function Game({ code, playerId, state, onLeave }) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [boardShaking, setBoardShaking] = useState(false);
   const [zoomRoom, setZoomRoom] = useState(null);
+  const [showSaboor, setShowSaboor] = useState(false);
   // Lazily captures whatever lastAccusation already was at mount time (e.g.
   // rejoining mid-game after an accusation already happened) so that gets
   // correctly treated as "old news" — vs. a player present from the start,
@@ -297,16 +298,22 @@ export default function Game({ code, playerId, state, onLeave }) {
     setZoomRoom(acc.room);
     const zoomTimer = setTimeout(() => setZoomRoom(null), 1700);
     let effectTimer;
+    let saboorTimer;
     if (acc.correct) {
       setShowConfetti(true);
       effectTimer = setTimeout(() => setShowConfetti(false), 2000);
     } else {
       setBoardShaking(true);
       effectTimer = setTimeout(() => setBoardShaking(false), 600);
+      if (acc.troll) {
+        setShowSaboor(true);
+        saboorTimer = setTimeout(() => setShowSaboor(false), 3800);
+      }
     }
     return () => {
       clearTimeout(zoomTimer);
       clearTimeout(effectTimer);
+      clearTimeout(saboorTimer);
     };
   }, [state.lastAccusation]);
 
@@ -444,6 +451,7 @@ export default function Game({ code, playerId, state, onLeave }) {
           />
           {boardShaking && <div className="wrong-flash" />}
         </div>
+        {showSaboor && <SaboorOverlay />}
 
         <div className="controls-bar">
           <div className="cb-status">
@@ -874,6 +882,18 @@ function Confetti() {
           }}
         />
       ))}
+    </div>
+  );
+}
+
+// Running joke: rimshi's accusation is correct but never counts as a win.
+function SaboorOverlay() {
+  return (
+    <div className="saboor-overlay">
+      <div className="saboor-card">
+        <img src="/images/saboor.jpg" alt="Saboor" className="saboor-photo" />
+        <p className="saboor-caption">I am saboor, you have been terrori-zed</p>
+      </div>
     </div>
   );
 }

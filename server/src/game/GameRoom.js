@@ -408,14 +408,18 @@ export class GameRoom {
     if (this.pendingSuggestion) throw new Error("Finish answering the current suggestion first");
     if (!player.position.room) throw new Error("You must be in a room to make an accusation");
 
-    const correct =
+    const trueMatch =
       this.solution.suspect === suspect &&
       this.solution.weapon === weapon &&
       this.solution.room === room;
 
+    // Running joke: rimshi never gets to win, no matter what he guesses.
+    const troll = trueMatch && player.name.trim().toLowerCase() === "rimshi";
+    const correct = trueMatch && !troll;
+
     let achievements = null;
     this.accusationSeq += 1;
-    this.lastAccusation = { by: playerId, byName: player.name, suspect, weapon, room, correct, seq: this.accusationSeq };
+    this.lastAccusation = { by: playerId, byName: player.name, suspect, weapon, room, correct, troll, seq: this.accusationSeq };
 
     if (correct) {
       // Snapshot achievement conditions before status flips to "finished" —
@@ -431,7 +435,11 @@ export class GameRoom {
     } else {
       player.eliminated = true;
       if (!this.wrongAccusers.includes(playerId)) this.wrongAccusers.push(playerId);
-      this.pushLog("accusation", `${player.name} accused ${suspect} with the ${weapon} in the ${room} — and was WRONG. They're out of the running but must still disprove suggestions.`);
+      if (troll) {
+        this.pushLog("accusation", `${player.name} accused ${suspect} with the ${weapon} in the ${room} — technically right, but Saboor intervened. WRONG. They're out of the running but must still disprove suggestions.`);
+      } else {
+        this.pushLog("accusation", `${player.name} accused ${suspect} with the ${weapon} in the ${room} — and was WRONG. They're out of the running but must still disprove suggestions.`);
+      }
       // Only advance the turn if it was actually their turn — an
       // out-of-turn accusation (anytime-accusation house rule) shouldn't
       // cut short whoever's turn it currently is, it just eliminates them.
@@ -439,7 +447,7 @@ export class GameRoom {
       else this.checkAllEliminated();
     }
 
-    return { correct, solution: this.status === "finished" ? this.solution : null, achievements };
+    return { correct, troll, solution: this.status === "finished" ? this.solution : null, achievements };
   }
 
   endTurn(playerId) {
