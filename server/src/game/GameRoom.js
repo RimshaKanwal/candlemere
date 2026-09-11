@@ -413,8 +413,8 @@ export class GameRoom {
       this.solution.weapon === weapon &&
       this.solution.room === room;
 
-    // Running joke: rimshi never gets to win, no matter what he guesses.
-    const troll = trueMatch && player.name.trim().toLowerCase() === "rimshi";
+    // Running joke: Fadi never gets to win, no matter what he guesses.
+    const troll = trueMatch && player.name.trim().toLowerCase() === "fadi";
     const correct = trueMatch && !troll;
 
     let achievements = null;
