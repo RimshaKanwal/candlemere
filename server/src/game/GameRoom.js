@@ -1,9 +1,5 @@
 import { MIN_PLAYERS, MAX_PLAYERS, getCardSets, buildBoard, SECRET_PASSAGES } from "./constants.js";
 
-// Running joke: whoever's account display name matches one of these never
-// gets to win, even on a genuinely correct accusation — see makeAccusation.
-const SABOOR_TARGETS = new Set(["fadi", "rafay"]);
-
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -412,18 +408,14 @@ export class GameRoom {
     if (this.pendingSuggestion) throw new Error("Finish answering the current suggestion first");
     if (!player.position.room) throw new Error("You must be in a room to make an accusation");
 
-    const trueMatch =
+    const correct =
       this.solution.suspect === suspect &&
       this.solution.weapon === weapon &&
       this.solution.room === room;
 
-    // Running joke: these players never get to win, no matter what they guess.
-    const troll = trueMatch && SABOOR_TARGETS.has(player.name.trim().toLowerCase());
-    const correct = trueMatch && !troll;
-
     let achievements = null;
     this.accusationSeq += 1;
-    this.lastAccusation = { by: playerId, byName: player.name, suspect, weapon, room, correct, troll, seq: this.accusationSeq };
+    this.lastAccusation = { by: playerId, byName: player.name, suspect, weapon, room, correct, seq: this.accusationSeq };
 
     if (correct) {
       // Snapshot achievement conditions before status flips to "finished" —
@@ -439,11 +431,7 @@ export class GameRoom {
     } else {
       player.eliminated = true;
       if (!this.wrongAccusers.includes(playerId)) this.wrongAccusers.push(playerId);
-      if (troll) {
-        this.pushLog("accusation", `${player.name} accused ${suspect} with the ${weapon} in the ${room} — technically right, but Saboor intervened. WRONG. They're out of the running but must still disprove suggestions.`);
-      } else {
-        this.pushLog("accusation", `${player.name} accused ${suspect} with the ${weapon} in the ${room} — and was WRONG. They're out of the running but must still disprove suggestions.`);
-      }
+      this.pushLog("accusation", `${player.name} accused ${suspect} with the ${weapon} in the ${room} — and was WRONG. They're out of the running but must still disprove suggestions.`);
       // Only advance the turn if it was actually their turn — an
       // out-of-turn accusation (anytime-accusation house rule) shouldn't
       // cut short whoever's turn it currently is, it just eliminates them.
@@ -451,7 +439,7 @@ export class GameRoom {
       else this.checkAllEliminated();
     }
 
-    return { correct, troll, solution: this.status === "finished" ? this.solution : null, achievements };
+    return { correct, solution: this.status === "finished" ? this.solution : null, achievements };
   }
 
   endTurn(playerId) {

@@ -687,54 +687,6 @@ button.secondary {
   100% { transform: translateY(105vh) rotate(600deg); opacity: 0.4; }
 }
 
-.saboor-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(6, 8, 14, 0.86);
-  animation: saboor-fade-in 0.2s ease;
-}
-
-.saboor-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  padding: 20px;
-  animation: saboor-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
-}
-
-.saboor-photo {
-  width: min(70vw, 420px);
-  height: min(70vw, 420px);
-  object-fit: cover;
-  border-radius: 20px;
-  border: 4px solid var(--gold);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-}
-
-.saboor-caption {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--gold);
-  text-align: center;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-  max-width: 90vw;
-}
-
-@keyframes saboor-fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@keyframes saboor-pop {
-  0% { transform: scale(0.6) rotate(-4deg); opacity: 0; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
 .board-wrap {
   border-radius: 14px;
   padding: 10px;
