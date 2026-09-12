@@ -1,5 +1,9 @@
 import { MIN_PLAYERS, MAX_PLAYERS, getCardSets, buildBoard, SECRET_PASSAGES } from "./constants.js";
 
+// Running joke: whoever's account display name matches one of these never
+// gets to win, even on a genuinely correct accusation — see makeAccusation.
+const SABOOR_TARGETS = new Set(["fadi", "rafay"]);
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -413,8 +417,8 @@ export class GameRoom {
       this.solution.weapon === weapon &&
       this.solution.room === room;
 
-    // Running joke: Fadi never gets to win, no matter what he guesses.
-    const troll = trueMatch && player.name.trim().toLowerCase() === "fadi";
+    // Running joke: these players never get to win, no matter what they guess.
+    const troll = trueMatch && SABOOR_TARGETS.has(player.name.trim().toLowerCase());
     const correct = trueMatch && !troll;
 
     let achievements = null;
