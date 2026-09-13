@@ -1,5 +1,5 @@
 import { gameStorage } from "../auth";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Scoped per room code so a new game starts with a blank sheet instead of
 // carrying over the previous game's markings — it was a single fixed key
@@ -10,10 +10,44 @@ export function notepadStorageKey(code) {
 export const NOTEPAD_GLYPH = { x: "✕", check: "✓", "?": "?" };
 const MARKS = [undefined, "x", "check", "?"]; // click cycles through these
 
+const SECTIONS = [
+  ["suspects", "Suspects"],
+  ["weapons", "Weapons"],
+  ["rooms", "Rooms"],
+];
+
+// The sheet runs to 31 rows at 8 players but the drawer is short, so size the
+// card rows to whatever is left after the column header and the section bands.
+// Scrolling a deduction grid is the one thing it must not do — you read it by
+// comparing rows against each other, which only works if they're all in view.
+function useFitRows(scrollRef, cardRowCount) {
+  const [rowH, setRowH] = useState(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !cardRowCount) return;
+    const measure = () => {
+      const table = el.querySelector(".notepad-table");
+      if (!table) return;
+      // Neither the header nor the bands scale with the card rows, so this
+      // measures once and settles — no feedback loop through the observer.
+      const head = table.tHead?.offsetHeight || 0;
+      const bands = [...table.querySelectorAll(".notepad-section-row")].reduce((sum, r) => sum + r.offsetHeight, 0);
+      const avail = el.clientHeight - head - bands;
+      setRowH(Math.max(12, Math.min(26, Math.floor(avail / cardRowCount) - 1)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [scrollRef, cardRowCount]);
+  return rowH;
+}
+
 // Detective sheet: rows are the cards (suspects, weapons, rooms), columns are
 // the players. Mark each cell as you deduce who holds a card, and click a card
 // name to cross the whole card off (ruled out) or star it (in the envelope).
 export default function Notepad({ cardSets, players, selfId, code }) {
+  const scrollRef = useRef(null);
   const storageKey = notepadStorageKey(code);
   const [marks, setMarks] = useState(() => {
     try {
@@ -45,16 +79,13 @@ export default function Notepad({ cardSets, players, selfId, code }) {
     });
   }
 
-  const sections = [
-    ["suspects", "Suspects"],
-    ["weapons", "Weapons"],
-    ["rooms", "Rooms"],
-  ];
+  const cardRowCount = SECTIONS.reduce((n, [key]) => n + (cardSets[key]?.length || 0), 0);
+  const rowH = useFitRows(scrollRef, cardRowCount);
 
   return (
-    <div className="notepad">
+    <div className="notepad" style={rowH ? { "--np-row": `${rowH}px` } : undefined}>
       <p className="notepad-legend">Tap names to rule out ✕ / star ✓ · cells = per-player</p>
-      <div className="notepad-scroll">
+      <div className="notepad-scroll" ref={scrollRef}>
         <table className="notepad-table">
           <thead>
             <tr>
@@ -68,7 +99,7 @@ export default function Notepad({ cardSets, players, selfId, code }) {
             </tr>
           </thead>
           <tbody>
-            {sections.map(([key, label]) => (
+            {SECTIONS.map(([key, label]) => (
               <FragmentSection
                 key={key}
                 label={label}

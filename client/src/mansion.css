@@ -125,9 +125,17 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .notepad-table td,.notepad-table th { height:23px; }
 .notepad-cell { height:23px; min-width:29px; font-size:11px; }
 .notepad-colhead { color:#35432e; font-size:10px; background:#d5cfb7; }
-.notepad-section-row .notepad-section-label { background:#c9c8ad; color:#34462f; padding:5px; font-size:8px; }
+.notepad-table .notepad-section-row .notepad-section-label { background:#c9c8ad; color:#34462f; height:15px; padding:2px 5px; font-size:8px; }
 .rowname-btn { font:10px Georgia,serif; min-height:23px; }
 .notepad-cell:hover { box-shadow:inset 0 0 0 2px #6a7858; }
+@media(min-width:681px) {
+  /* Integer row heights leave a remainder; stretching the table spends it on
+     the rows instead of leaving a dead strip under the sheet. */
+  .notepad-table { height:100%; }
+  .notepad-table tbody tr:not(.notepad-section-row) td { height:var(--np-row,23px); }
+  .notepad-table tbody tr:not(.notepad-section-row) .notepad-cell { height:var(--np-row,23px); }
+  .notepad-table tbody tr:not(.notepad-section-row) .rowname-btn { min-height:var(--np-row,23px); }
+}
 .game-log li { background:#00000008; border-color:#7a84604a; line-height:1.6; }
 .modal-backdrop { backdrop-filter:blur(7px); background:#06100cbb; padding:16px; }
 .modal { background:#182b21; border-radius:7px; max-height:90dvh; overflow:auto; }
