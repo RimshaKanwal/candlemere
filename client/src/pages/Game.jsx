@@ -99,7 +99,7 @@ function useFitCell(ref, rows, cols) {
       const availW = el.clientWidth - 28;
       const availH = el.clientHeight - 28;
       const c = Math.floor(Math.min(availW / cols, availH / rows) - 1);
-      setCell(Math.max(8, Math.min(44, c)));
+      setCell(Math.max(8, Math.min(64, c)));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -416,6 +416,20 @@ export default function Game({ code, playerId, state, onLeave }) {
   // game over) — not just on their own turn.
   const canAccuseAnytime = state.allowAnytimeAccusation && !self.eliminated && !pending && state.status === "playing";
 
+  const cue = pending
+    ? "The table is answering. Watch the evidence."
+    : self.eliminated
+    ? "Keep your evidence close. You still answer suggestions."
+    : myActive
+    ? canMove
+      ? "Follow the light. Choose a highlighted room or square."
+      : turnState.hasSuggested
+      ? "A new clue. Update your notes, accuse, or end your turn."
+      : self.position.room
+      ? "You’re inside. Make a suggestion, or explore another room."
+      : "Your move, detective. Roll the dice to explore."
+    : `${currentPlayer?.name} is investigating. A good time to connect your clues.`;
+
   return (
     <div className="game-screen">
       {briefingOpen && <CaseBriefing onClose={closeBriefing} />}
@@ -446,8 +460,11 @@ export default function Game({ code, playerId, state, onLeave }) {
       />
 
       <div className="center-col">
-        <div className="mansion-heading"><div><span className="eyebrow">The scene of the crime</span><h2>The Mansion <span>at midnight</span></h2></div><button className="briefing-trigger" onClick={() => setBriefingOpen(true)}>Case briefing ↗</button></div>
-        <div className={`investigation-cue ${myActive ? "your-move" : ""}`}><span className="live-spark" /><span>{pending ? "The table is answering. Watch the evidence." : self.eliminated ? "Keep your evidence close. You still answer suggestions." : myActive ? canMove ? "Follow the light. Choose a highlighted room or square." : turnState.hasSuggested ? "A new clue. Update your notes, accuse, or end your turn." : self.position.room ? "You’re inside. Make a suggestion, or explore another room." : "Your move, detective. Roll the dice to explore." : `${currentPlayer?.name} is investigating. A good time to connect your clues.`}</span></div>
+        <div className="mansion-heading">
+          <div className="mansion-title"><span className="eyebrow">The scene of the crime</span><h2>The Mansion <span>at midnight</span></h2></div>
+          <div className={`investigation-cue ${myActive ? "your-move" : ""}`}><span className="live-spark" /><span>{cue}</span></div>
+          <button className="briefing-trigger" onClick={() => setBriefingOpen(true)}>Case briefing ↗</button>
+        </div>
         <div className="board-stage" ref={tableRef}>
           <Board
             board={board}

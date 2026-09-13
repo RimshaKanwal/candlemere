@@ -50,8 +50,8 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .player-row.empty { font-size:11px; }
 .code-chip { border-width:1px; border-radius:4px; }
 .room-code-share { flex-wrap:wrap; font-size:12px; }
-.in-game .app-header { margin-bottom:18px; min-height:72px; }
-.game-screen { gap:18px; }
+.in-game .app-header { margin-bottom:10px; min-height:60px; }
+.game-screen { gap:14px; }
 .players-rail { flex-basis:185px; gap:12px; padding:0 5px 8px 0; }
 .rail-heading { padding:8px 0 8px; }
 .rail-heading h3 { margin:6px 0 0; font:23px Georgia,serif; }
@@ -64,11 +64,13 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .prail-meta { margin-top:4px; font-size:9px; }
 .prail-cards { font-size:10px; margin-top:3px; }
 .prail-you { background:#56735d; }
-.mansion-heading { display:flex; align-items:center; justify-content:space-between; padding:3px 4px; gap:12px; }
-.mansion-heading h2 { margin:4px 0 0; font:27px Georgia,serif; }
-.mansion-heading h2 span { font-size:17px; font-style:italic; color:var(--muted); }
-.briefing-trigger { border:1px solid #445044; background:transparent; color:var(--gold); font-size:10px; padding:9px 11px; border-radius:4px; cursor:pointer; white-space:nowrap; }
-.investigation-cue { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted); padding:10px 12px; border:1px solid #ffffff09; background:#ffffff03; border-radius:4px; }
+.mansion-heading { display:flex; align-items:center; padding:0 4px; gap:14px; }
+.mansion-title { flex:0 0 auto; }
+.mansion-heading h2 { margin:2px 0 0; font:24px Georgia,serif; }
+.mansion-heading h2 span { font-size:15px; font-style:italic; color:var(--muted); }
+.briefing-trigger { flex:0 0 auto; border:1px solid #445044; background:transparent; color:var(--gold); font-size:10px; padding:9px 11px; border-radius:4px; cursor:pointer; white-space:nowrap; }
+.investigation-cue { flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted); padding:8px 12px; border:1px solid #ffffff09; background:#ffffff03; border-radius:4px; }
+.investigation-cue span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .investigation-cue.your-move { background:#d9ba7c0c; border-color:#d9ba7c33; color:#e4d6b9; }
 .board-stage { overflow:hidden; background:radial-gradient(ellipse,#38553a35,transparent 75%); }
 .board-wrap { padding:10px; border-radius:5px; border:2px solid #917647; background:#19271e; box-shadow:0 12px 35px #0008,inset 0 0 0 4px #0c1912,inset 0 0 0 5px #806a4144; }
@@ -92,10 +94,10 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .crest-title { font:clamp(8px,1vw,15px) Georgia,serif; letter-spacing:2px; }
 .crest-sub { font:6px system-ui; letter-spacing:1.8px; margin-top:7px; }
 .board-token { box-shadow:0 2px 5px #000b,0 0 0 2px #0005; }
-.controls-bar { flex-wrap:wrap; gap:10px; border-radius:6px; background:#17271f; padding:12px; }
-.cb-status { flex-basis:100%; }
+.controls-bar { flex-wrap:wrap; gap:10px; border-radius:6px; background:#17271f; padding:9px 12px; }
+.cb-status { flex:1 1 0; }
 .status-line { white-space:normal; font-size:12px; }
-.cb-actions { flex-wrap:wrap; width:100%; gap:6px; }
+.cb-actions { flex-wrap:wrap; justify-content:flex-end; gap:6px; }
 .cb-btn { min-height:38px; font-size:11px; padding:8px 10px; border-radius:4px; }
 .cb-btn.dice { background:linear-gradient(120deg,#dec58e,#b59a65); color:#15221a; }
 .cb-btn.suggest { background:#31563f; border:1px solid #66866b; color:#e7efdf; }
@@ -151,9 +153,9 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .notes-reveal-sheet { overflow:auto; }
 .nag-toast { max-width:calc(100vw - 28px); font-size:14px; }
 @media(min-width:1600px) { .side-drawer { flex-basis:360px; } .players-rail { flex-basis:205px; } }
-@media(max-width:1150px) { .app-shell { padding:0 16px 16px; } .game-screen { gap:10px; } .players-rail { flex-basis:150px; } .side-drawer { flex-basis:280px; } .prail-avatar { width:34px; height:42px; } .prail-card { gap:6px; padding:10px 6px; } .prail-name { font-size:10px; } .mansion-heading h2 { font-size:22px; } .mansion-heading h2 span { display:none; } .arrival { padding-left:5%; padding-right:5%; gap:5%; } }
+@media(max-width:1150px) { .app-shell { padding:0 16px 16px; } .game-screen { gap:10px; } .players-rail { flex-basis:150px; } .side-drawer { flex-basis:280px; } .prail-avatar { width:34px; height:42px; } .prail-card { gap:6px; padding:10px 6px; } .prail-name { font-size:10px; } .mansion-heading { flex-wrap:wrap; } .mansion-heading h2 { font-size:22px; } .mansion-heading h2 span { display:none; } .investigation-cue { order:3; flex-basis:100%; } .arrival { padding-left:5%; padding-right:5%; gap:5%; } }
 @media(max-width:900px) { .app-shell { height:auto; min-height:100dvh; overflow:visible; } .app-shell>main { min-height:0; } .game-screen { display:grid; grid-template-columns:minmax(0,1fr) 280px; height:auto; } .players-rail { grid-column:1/-1; flex-direction:row; overflow-x:auto; padding-top:12px; } .rail-heading { flex:0 0 130px; } .prail-card { flex:0 0 145px; } .center-col { min-height:650px; } .board-stage { min-height:450px; } .side-drawer { max-height:750px; } .arrival { gap:30px; padding:50px 5% 80px; } .arrival-story h2 { font-size:46px; } .arrival-story > p br { display:none; } .arrival-panel .card { padding:23px; } .invitation { margin-top:35px; } }
-@media(max-width:680px) { .app-shell { padding:0 12px 14px; } .app-header { min-height:72px; gap:8px; flex-wrap:wrap; padding:10px 0; } .brand-seal { width:28px; height:34px; font-size:22px; } .brand { gap:7px; } .app-header h1 { font-size:20px; letter-spacing:3px; } .app-header h1 span { font-size:7px; margin-left:6px; } .brand-sub { font-size:8px; } .header-right { gap:6px; flex-wrap:wrap; } .account-chip { font-size:10px; padding:5px; } .account-title,.account-badges { display:none; } .room-code-badge { padding:4px 7px; font-size:10px; } .arrival { grid-template-columns:1fr; gap:28px; padding:40px 18px 65px; } .arrival::before { background:linear-gradient(0deg,#0c1714 10%,#0c171440 100%),url('/art/mansion-night.jpg') 62% top/auto 600px no-repeat; } .arrival::after { inset:10px 0; } .arrival-story { padding:0; } .arrival-story h2 { font-size:49px; margin:20px 0; } .arrival-story>p { font-size:12px; max-width:290px; } .arrival-details { font-size:9px; gap:8px; margin-top:20px; } .invitation { display:none; } .arrival-panel { max-width:none; } .arrival-caption { bottom:25px; left:18px; right:18px; font-size:7px; } .arrival-caption span { display:none; } .game-screen { grid-template-columns:minmax(0,1fr); } .center-col { min-height:0; gap:8px; } .board-stage { height: min(108vw,580px); min-height:0; flex:none; } .side-drawer { max-height:none; } .drawer-body { height:480px; flex:auto; } .prail-card { flex-basis:145px; } .rail-heading { flex-basis:115px; } .rail-heading h3 { font-size:19px; } .rail-heading .eyebrow { font-size:8px; } .mansion-heading h2 { font-size:26px; } .mansion-heading .eyebrow { font-size:8px; } .room-block { padding-top:6%; } .room-emoji { font-size:17px; } .room-name { font-size:9px; } .room-passage { font-size:6px; } .board-token.in-room { width:17px; height:17px; margin:-8.5px 0 0 -8.5px; font-size:10px; } .investigation-cue { font-size:10px; } .notepad-cell,.notepad-table td { height:32px; } .rowname-btn { min-height:32px; font-size:12px; } .notepad-colhead { font-size:11px; } .briefing-content { padding:0 22px 22px; } .briefing-content h2 { font-size:34px; } .briefing-art { height:135px; } .finished-card { margin:20px auto; max-height:none; padding:18px; } .notes-reveal-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:680px) { .app-shell { padding:0 12px 14px; } .app-header { min-height:72px; gap:8px; flex-wrap:wrap; padding:10px 0; } .brand-seal { width:28px; height:34px; font-size:22px; } .brand { gap:7px; } .app-header h1 { font-size:20px; letter-spacing:3px; } .app-header h1 span { font-size:7px; margin-left:6px; } .brand-sub { font-size:8px; } .header-right { gap:6px; flex-wrap:wrap; } .account-chip { font-size:10px; padding:5px; } .account-title,.account-badges { display:none; } .room-code-badge { padding:4px 7px; font-size:10px; } .arrival { grid-template-columns:1fr; gap:28px; padding:40px 18px 65px; } .arrival::before { background:linear-gradient(0deg,#0c1714 10%,#0c171440 100%),url('/art/mansion-night.jpg') 62% top/auto 600px no-repeat; } .arrival::after { inset:10px 0; } .arrival-story { padding:0; } .arrival-story h2 { font-size:49px; margin:20px 0; } .arrival-story>p { font-size:12px; max-width:290px; } .arrival-details { font-size:9px; gap:8px; margin-top:20px; } .invitation { display:none; } .arrival-panel { max-width:none; } .arrival-caption { bottom:25px; left:18px; right:18px; font-size:7px; } .arrival-caption span { display:none; } .game-screen { grid-template-columns:minmax(0,1fr); } .center-col { min-height:0; gap:8px; } .cb-status { flex:0 0 100%; } .cb-actions { width:100%; } .board-stage { height: min(108vw,580px); min-height:0; flex:none; } .side-drawer { max-height:none; } .drawer-body { height:480px; flex:auto; } .prail-card { flex-basis:145px; } .rail-heading { flex-basis:115px; } .rail-heading h3 { font-size:19px; } .rail-heading .eyebrow { font-size:8px; } .mansion-heading h2 { font-size:26px; } .mansion-heading .eyebrow { font-size:8px; } .room-block { padding-top:6%; } .room-emoji { font-size:17px; } .room-name { font-size:9px; } .room-passage { font-size:6px; } .board-token.in-room { width:17px; height:17px; margin:-8.5px 0 0 -8.5px; font-size:10px; } .investigation-cue { font-size:10px; } .notepad-cell,.notepad-table td { height:32px; } .rowname-btn { min-height:32px; font-size:12px; } .notepad-colhead { font-size:11px; } .briefing-content { padding:0 22px 22px; } .briefing-content h2 { font-size:34px; } .briefing-art { height:135px; } .finished-card { margin:20px auto; max-height:none; padding:18px; } .notes-reveal-grid { grid-template-columns:minmax(0,1fr); } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
 
 /* One illustrated atlas keeps all eleven rooms visually consistent. */
