@@ -29,6 +29,8 @@ export default function Home({ onShowLeaderboard }) {
 
   return (
     <div className="card home-card">
+      <span className="eyebrow">An evening of intrigue</span>
+      <h2>Gather your suspects.</h2>
       <div className="tabs">
         <button className={mode === "create" ? "tab active" : "tab"} onClick={() => setMode("create")}>
           Create Game
@@ -73,7 +75,7 @@ export default function Home({ onShowLeaderboard }) {
               : "Classic rule: you can only accuse during your own turn."}
           </p>
 
-          <button type="submit" className="primary">Create Room</button>
+          <button type="submit" className="primary">Open the doors →</button>
         </form>
       ) : (
         <form onSubmit={handleJoin} className="form">
@@ -88,7 +90,7 @@ export default function Home({ onShowLeaderboard }) {
               style={{ textTransform: "uppercase" }}
             />
           </label>
-          <button type="submit" className="primary">Join Room</button>
+          <button type="submit" className="primary">Join the investigation →</button>
         </form>
       )}
 

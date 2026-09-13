@@ -7,7 +7,9 @@ import Home from "./pages/Home";
 import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
 import Leaderboard from "./pages/Leaderboard";
+import Arrival from "./components/Arrival";
 import "./App.css";
+import "./mansion.css";
 
 const SESSION_KEY = "cluedo-session";
 
@@ -167,9 +169,9 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${state?.status === "playing" ? "in-game" : "at-arrival"}`}>
       <header className="app-header">
-        <h1>🔎 Cluedo Online</h1>
+        <div className="brand"><span className="brand-seal">C</span><div><h1>Cluedo<span>ONLINE</span></h1><span className="brand-sub">Everybody has something to hide.</span></div></div>
         <div className="header-right">
           {code && <span className="room-code-badge">Room: {code}</span>}
           {account && (
@@ -205,7 +207,7 @@ export default function App() {
         </div>
       </header>
       {error && <div className="error-banner">{error}</div>}
-      <main>{content}</main>
+      <main>{!checkingSession && view !== "leaderboard" && (!state || state.status === "lobby") ? <Arrival lobby={state?.status === "lobby"}>{content}</Arrival> : content}</main>
     </div>
   );
 }

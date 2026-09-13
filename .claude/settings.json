@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check src/db.js)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

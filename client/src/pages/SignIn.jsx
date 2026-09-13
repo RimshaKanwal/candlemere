@@ -23,7 +23,8 @@ export default function SignIn({ onSignedIn }) {
 
   return (
     <div className="card home-card">
-      <h2>🔎 Sign In</h2>
+      <span className="eyebrow">The guest book</span>
+      <h2>Make an entrance.</h2>
       <p className="hint">
         Pick a username and a PIN. First time using that name creates the account; after that, the same PIN signs you
         back in — on any device.
@@ -34,7 +35,8 @@ export default function SignIn({ onSignedIn }) {
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. Hanan"
+            placeholder="Your detective name"
+            autoComplete="username"
             maxLength={20}
             required
           />
@@ -44,7 +46,10 @@ export default function SignIn({ onSignedIn }) {
           <input
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-            placeholder="e.g. 1234"
+            placeholder="Your secret PIN"
+            type="password"
+            minLength={4}
+            autoComplete="current-password"
             inputMode="numeric"
             maxLength={6}
             required
@@ -52,7 +57,7 @@ export default function SignIn({ onSignedIn }) {
         </label>
         {error && <p className="hint" style={{ color: "#ff8a80" }}>{error}</p>}
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? "Signing in…" : "Continue"}
+          {busy ? "Signing in…" : "Enter the mansion →"}
         </button>
       </form>
     </div>

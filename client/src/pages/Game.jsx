@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { socket } from "../socket";
 import Notepad, { notepadStorageKey } from "../components/Notepad";
+import CaseBriefing from "../components/CaseBriefing";
 import NotesReveal from "../components/NotesReveal";
 import { sfx, soundEnabled, toggleSound } from "../sound";
 
@@ -15,6 +16,14 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g
 
 function Art({ kind, name, emoji, className }) {
   const [failed, setFailed] = useState(false);
+  const portraitIndex = Object.keys(CHARACTERS).indexOf(name);
+  const roomIndex = Object.keys(ROOM_THEME).indexOf(name);
+  if (kind === "rooms" && roomIndex >= 0) {
+    return <span role="img" aria-label={name} className={`room-art ${className || ""}`} style={{ backgroundPosition: `${(roomIndex % 4) * 100 / 3}% ${Math.floor(roomIndex / 4) * 50}%` }} />;
+  }
+  if (kind === "suspects" && portraitIndex >= 0) {
+    return <span role="img" aria-label={name} className={`portrait-art ${className || ""}`} style={{ backgroundPosition: `${(portraitIndex % 4) * 100 / 3}% ${Math.floor(portraitIndex / 4) * 100}%` }} />;
+  }
   if (USE_CUSTOM_ART && !failed) {
     return (
       <img
@@ -88,8 +97,8 @@ function useFitCell(ref, rows, cols) {
     const measure = () => {
       const availW = el.clientWidth - 28;
       const availH = el.clientHeight - 28;
-      const c = Math.floor(Math.min(availW / cols, availH / rows));
-      setCell(Math.max(15, Math.min(44, c)));
+      const c = Math.floor(Math.min(availW / cols, availH / rows) - 1);
+      setCell(Math.max(8, Math.min(44, c)));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -128,6 +137,13 @@ export default function Game({ code, playerId, state, onLeave }) {
     [turnState.reachable]
   );
 
+  const [briefingOpen, setBriefingOpen] = useState(() => {
+    try { return !sessionStorage.getItem(`cluedo-briefing-${code}-${playerId}`); } catch { return true; }
+  });
+  function closeBriefing() {
+    setBriefingOpen(false);
+    try { sessionStorage.setItem(`cluedo-briefing-${code}-${playerId}`, "seen"); } catch { /* Storage is optional. */ }
+  }
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [accuseOpen, setAccuseOpen] = useState(false);
   const [suggestion, setSuggestion] = useState({ suspect: "", weapon: "" });
@@ -401,10 +417,11 @@ export default function Game({ code, playerId, state, onLeave }) {
 
   return (
     <div className="game-screen">
+      {briefingOpen && <CaseBriefing onClose={closeBriefing} />}
       {showNag && (
         <div className="nag-toast">
           <span className="nag-siren">🚨</span>
-          <span className="nag-text">Hanan aap ke baari hai!</span>
+          <span className="nag-text">{currentPlayer?.name}, aap ki baari hai!</span>
           <button
             className="nag-close"
             onClick={() => {
@@ -428,6 +445,8 @@ export default function Game({ code, playerId, state, onLeave }) {
       />
 
       <div className="center-col">
+        <div className="mansion-heading"><div><span className="eyebrow">The scene of the crime</span><h2>The Mansion <span>at midnight</span></h2></div><button className="briefing-trigger" onClick={() => setBriefingOpen(true)}>Case briefing ↗</button></div>
+        <div className={`investigation-cue ${myActive ? "your-move" : ""}`}><span className="live-spark" /><span>{pending ? "The table is answering. Watch the evidence." : self.eliminated ? "Keep your evidence close. You still answer suggestions." : myActive ? canMove ? "Follow the light. Choose a highlighted room or square." : turnState.hasSuggested ? "A new clue. Update your notes, accuse, or end your turn." : self.position.room ? "You’re inside. Make a suggestion, or explore another room." : "Your move, detective. Roll the dice to explore." : `${currentPlayer?.name} is investigating. A good time to connect your clues.`}</span></div>
         <div className="board-stage" ref={tableRef}>
           <Board
             board={board}
@@ -514,7 +533,7 @@ export default function Game({ code, playerId, state, onLeave }) {
 
       <aside className="side-drawer">
         <div className="drawer-hand">
-          <h4>Your Cards</h4>
+          <h4>Your evidence <span>PRIVATE</span></h4>
           <div className="hand-cards">
             {self?.cards?.length ? (
               self.cards.map((c, i) => <PlayingCard key={i} card={c} />)
@@ -640,6 +659,7 @@ function PlayersRail({ players, turnOrder, currentId, selfId, responses, reactio
 
   return (
     <div className="players-rail">
+      <div className="rail-heading"><span className="eyebrow">Around the table</span><h3>The detectives <span>{players.length}</span></h3></div>
       {ordered.map((p) => {
         const meta = charMeta(p.character);
         const resp = responses[p.id];
@@ -717,13 +737,13 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
         const { r0, r1, c0, c1 } = room.rect;
         const siblings = roomTokens.get(p.position.room) || [p];
         const { dx, dy } = clusterOffset(siblings.indexOf(p), siblings.length);
-        const x = ((c0 + c1 + 1) / 2 + dx * 0.55) * cell;
-        const y = ((r0 + r1 + 1) / 2 + dy * 0.55) * cell;
+        const x = ((c0 + c1 + 1) / 2 + dx * 0.8) * (cell + 1);
+        const y = ((r0 + r1 + 1) / 2 + dy * 0.8) * (cell + 1);
         return { id: p.id, x, y, meta, name: p.name, character: p.character, inRoom: true };
       }
       if (p.position.cell) {
-        const x = (p.position.cell.c + 0.5) * cell;
-        const y = (p.position.cell.r + 0.5) * cell;
+        const x = (p.position.cell.c + 0.5) * (cell + 1);
+        const y = (p.position.cell.r + 0.5) * (cell + 1);
         return { id: p.id, x, y, meta, name: p.name, character: p.character, inRoom: false };
       }
       return null;
@@ -735,9 +755,9 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
       <div className={`board-cells ${zooming ? "zooming" : ""}`} style={gridStyle}>
         {!hasCellar && (
           <div className="board-centerpiece" style={{ gridRow: "11 / 17", gridColumn: "10 / 16" }}>
-            <div className="crest-envelope">✉</div>
+            <div className="crest-envelope">C</div>
             <div className="crest-title">CLUEDO</div>
-            <div className="crest-sub">The Case File</div>
+            <div className="crest-sub">TRUST NO ONE</div>
           </div>
         )}
         {Object.entries(board.rooms).map(([name, room]) => {
@@ -747,7 +767,10 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
           return (
             <div
               key={name}
-              className={`room-block ${reachable ? "reachable" : ""}`}
+              className={`room-block room-${slug(name)} ${reachable ? "reachable" : ""}`}
+              role="button" tabIndex={reachable ? 0 : -1} aria-disabled={!reachable}
+              aria-label={`${name}${reachable ? ", move here" : ""}`}
+              onKeyDown={(e) => { if (reachable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onMoveRoom(name); } }}
               style={{
                 gridRow: `${r0 + 1} / ${r1 + 2}`,
                 gridColumn: `${c0 + 1} / ${c1 + 2}`,
@@ -757,6 +780,7 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
             >
               <div className="room-emoji"><Art kind="rooms" name={name} emoji={theme.emoji} /></div>
               <div className="room-name">{name}</div>
+              {SECRET_PASSAGES[name] && <span className="room-passage">↗ {SECRET_PASSAGES[name]}</span>}
             </div>
           );
         })}
@@ -772,6 +796,10 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
                 key={key}
                 className={`grid-cell ${isDoor ? "door-cell" : "corridor-cell"} ${reachable ? "reachable" : ""}`}
                 style={{ gridRow: r + 1, gridColumn: c + 1 }}
+                role={reachable ? "button" : undefined}
+                tabIndex={reachable ? 0 : undefined}
+                aria-label={reachable ? `Move to row ${r + 1}, column ${c + 1}` : undefined}
+                onKeyDown={(e) => { if (reachable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onMoveCell(r, c); } }}
                 title={isDoor ? `Door — ${cellData.room}` : undefined}
                 onClick={() => reachable && onMoveCell(r, c)}
               />
@@ -990,15 +1018,17 @@ function GameLog({ log }) {
 }
 
 function Modal({ title, onClose, children }) {
+  const dialog = useRef(null);
+  useEffect(() => { dialog.current.showModal(); }, []);
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{title}</h3>
-          {onClose && <button className="close-btn" onClick={onClose}>×</button>}
-        </div>
-        {children}
+    <dialog ref={dialog} className="modal game-dialog" aria-label={title}
+      onCancel={(event) => { event.preventDefault(); onClose?.(); }}
+      onClick={(event) => { if (event.target === dialog.current) onClose?.(); }}>
+      <div className="modal-header">
+        <h3>{title}</h3>
+        {onClose && <button className="close-btn" aria-label="Close dialog" onClick={onClose}>×</button>}
       </div>
-    </div>
+      {children}
+    </dialog>
   );
 }

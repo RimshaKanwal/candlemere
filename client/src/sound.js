@@ -66,7 +66,10 @@ export const sfx = {
   },
   move() {
     if (!enabled) return;
-    beep(520, 0, 0.07, { gain: 0.05 });
+    [0, 0.16, 0.32].forEach((t) => {
+      noise(t, 0.055, 0.018);
+      beep(95, t, 0.08, { gain: 0.035 });
+    });
   },
   show() {
     if (!enabled) return;
