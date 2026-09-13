@@ -101,8 +101,12 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .cb-btn { min-height:38px; font-size:11px; padding:8px 10px; border-radius:4px; }
 .cb-btn.dice { background:linear-gradient(120deg,#dec58e,#b59a65); color:#15221a; }
 .cb-btn.suggest { background:#31563f; border:1px solid #66866b; color:#e7efdf; }
-.cb-btn.accuse { background:#653b32; border:1px solid #955b49; }
+.cb-btn.accuse { background:linear-gradient(120deg,#a2493a,#7d3029); border:1px solid #c9805f; color:#fdf1e9; }
 .cb-btn.end,.sound-toggle { background:#203428; }
+/* Dimming alone left enabled and disabled looking alike — the enabled brick
+   was barely brighter than the bar. Disabled now drops the colour entirely. */
+.cb-btn:disabled { opacity:1; background:#1b2a22; border:1px solid #2f4136; color:#77866f; box-shadow:none; }
+.cb-btn:disabled .cb-ico { filter:grayscale(1); opacity:.45; }
 .reaction-menu-wrap { margin-left:auto; }
 .sound-toggle { border-radius:4px; }
 .side-drawer { flex-basis:320px; gap:10px; padding-top:3px; }
