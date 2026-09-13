@@ -46,3 +46,22 @@ export async function fetchMenace() {
   if (!res.ok) throw new Error("Could not load menace");
   return res.json(); // { username, wrongAccusations } | null
 }
+
+// Guests keep their identity, room session, and notes only in this page's memory.
+let guestSession = false;
+const guestData = new Map();
+const memoryStorage = {
+  getItem: (key) => guestData.get(key) ?? null,
+  setItem: (key, value) => guestData.set(key, String(value)),
+  removeItem: (key) => guestData.delete(key),
+};
+export function setGuestSession(value) { guestSession = value; guestData.clear(); }
+export function gameStorage() { return guestSession ? memoryStorage : localStorage; }
+export async function enterAsGuest(username) {
+  const res = await fetch(`${SERVER_URL}/api/guest`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Could not enter as guest");
+  return data;
+}

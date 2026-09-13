@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 import { GameManager } from "./game/gameManager.js";
 import { MIN_PLAYERS, MAX_PLAYERS } from "./game/constants.js";
 import { initSchema } from "./db.js";
-import { registerOrLogin, verifyToken, getUserById, getLeaderboard, getMenace, recordGameResult } from "./auth.js";
+import { createGuest, registerOrLogin, verifyToken, getUserById, getLeaderboard, getMenace, recordGameResult } from "./auth.js";
 
 const REACTION_EMOJI = ["😏 Suspicious...", "🤔 Hmm", "😱 No way!", "😂 lol", "🎯 Got you!", "😤 Ugh"];
 
@@ -26,10 +26,16 @@ app.post("/api/auth", async (req, res) => {
   }
 });
 
+app.post("/api/guest", (req, res) => {
+  try { res.json(createGuest(req.body?.username)); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 app.get("/api/me", async (req, res) => {
   try {
     const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     const decoded = verifyToken(token);
+    if (decoded.isGuest) throw new Error("Guests have no saved account");
     const user = await getUserById(decoded.userId);
     res.json(user);
   } catch {
@@ -56,14 +62,14 @@ app.get("/api/menace", async (_req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: CLIENT_ORIGIN } });
 
-// Every socket connection must carry a valid account token (issued by
-// POST /api/auth) — createGame/joinGame derive the player's display name
+// Every socket connection must carry a signed account or temporary guest token
+// (issued by POST /api/auth or POST /api/guest) — createGame/joinGame derive the player's display name
 // from this instead of trusting free-typed client input, so wins/losses
 // land on the right account regardless of what anyone types.
 io.use((socket, next) => {
   try {
     const decoded = verifyToken(socket.handshake.auth?.token);
-    socket.data.user = { userId: decoded.userId, username: decoded.username };
+    socket.data.user = { userId: decoded.isGuest ? null : decoded.userId, username: decoded.username, guestId: decoded.isGuest ? decoded.guestId : null };
     next();
   } catch {
     next(new Error("unauthenticated"));
@@ -111,7 +117,7 @@ function leavePreviousRoom(socket) {
   const prevRoom = manager.getRoom(prevCode);
   if (prevRoom) {
     prevRoom.removePlayerBySocket(socket.id);
-    if (prevRoom.players.length === 0) manager.deleteRoom(prevCode);
+    if (prevRoom.players.length === 0 || !prevRoom.players.some((p) => p.connected)) manager.deleteRoom(prevCode);
     else broadcastState(prevCode);
   }
   socket.data.code = null;
@@ -119,11 +125,20 @@ function leavePreviousRoom(socket) {
 }
 
 io.on("connection", (socket) => {
+  socket.use(([event, payload], next) => {
+    const seatActions = ["startGame", "rollDice", "movePlayer", "useSecretPassage", "makeSuggestion", "respondSuggestion", "makeAccusation", "endTurn", "sendReaction", "submitFinalNotes"];
+    if (seatActions.includes(event) && (!socket.data.playerId || payload?.playerId !== socket.data.playerId || payload?.code !== socket.data.code)) {
+      socket.emit("errorMessage", "This is not your seat");
+      return;
+    }
+    next();
+  });
   socket.on("createGame", ({ maxPlayers, allowAnytimeAccusation }) => {
     wrap(socket, () => {
       leavePreviousRoom(socket);
       const room = manager.createRoom(maxPlayers, { allowAnytimeAccusation });
       const player = room.addPlayer(socket.id, socket.data.user.username, socket.data.user.userId);
+      player.guestId = socket.data.user.guestId;
       socket.join(room.code);
       socket.data.code = room.code;
       socket.data.playerId = player.id;
@@ -136,14 +151,16 @@ io.on("connection", (socket) => {
     wrap(socket, () => {
       const room = manager.getRoom(code);
       if (!room) throw new Error("Room not found. Check the code and try again.");
-      const myUsername = socket.data.user.username.trim().toLowerCase();
+      const ownsSeat = (p) => socket.data.user.guestId
+        ? p.guestId === socket.data.user.guestId
+        : p.userId === socket.data.user.userId;
 
       // If the game is already going, let a returning player reclaim their
       // seat by account (they left / got disconnected) instead of being
       // blocked — matched by account, not by whatever they type.
       if (room.status !== "lobby") {
         const seat = room.players.find(
-          (p) => !p.connected && p.name.trim().toLowerCase() === myUsername
+          (p) => !p.connected && ownsSeat(p)
         );
         if (!seat) throw new Error("Game already in progress — ask them to finish, or sign back in as the account you played as.");
         leavePreviousRoom(socket);
@@ -160,6 +177,7 @@ io.on("connection", (socket) => {
 
       leavePreviousRoom(socket);
       const player = room.addPlayer(socket.id, socket.data.user.username, socket.data.user.userId);
+      player.guestId = socket.data.user.guestId;
       socket.join(room.code);
       socket.data.code = room.code;
       socket.data.playerId = player.id;
@@ -172,7 +190,10 @@ io.on("connection", (socket) => {
   socket.on("rejoin", ({ code, playerId }) => {
     const room = manager.getRoom(code);
     const player = room?.players.find((p) => p.id === playerId);
-    if (!room || !player) {
+    const ownsSeat = player && (socket.data.user.guestId
+      ? player.guestId === socket.data.user.guestId
+      : player.userId === socket.data.user.userId);
+    if (!room || !ownsSeat) {
       socket.emit("sessionEnded");
       return;
     }
@@ -332,7 +353,7 @@ io.on("connection", (socket) => {
       const stillThere = stillRoom.players.find((p) => p.id === playerId);
       if (!stillThere || stillThere.connected) return; // reconnected in time
       stillRoom.removePlayerBySocket(socket.id);
-      if (stillRoom.players.length === 0) manager.deleteRoom(code);
+      if (stillRoom.players.length === 0 || !stillRoom.players.some((p) => p.connected)) manager.deleteRoom(code);
       else broadcastState(code);
     }, 8000);
   });

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { signIn } from "../auth";
+import { signIn, enterAsGuest } from "../auth";
 
 export default function SignIn({ onSignedIn }) {
+  const [guest, setGuest] = useState(false);
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState(null);
@@ -12,7 +13,7 @@ export default function SignIn({ onSignedIn }) {
     setError(null);
     setBusy(true);
     try {
-      const data = await signIn(username, pin);
+      const data = await (guest ? enterAsGuest(username) : signIn(username, pin));
       onSignedIn(data);
     } catch (err) {
       setError(err.message);
@@ -25,13 +26,16 @@ export default function SignIn({ onSignedIn }) {
     <div className="card home-card">
       <span className="eyebrow">The guest book</span>
       <h2>Make an entrance.</h2>
+      <div className="tabs">
+        <button className={`tab ${!guest ? "active" : ""}`} onClick={() => { setGuest(false); setError(null); }}>Sign in</button>
+        <button className={`tab ${guest ? "active" : ""}`} onClick={() => { setGuest(true); setError(null); }}>Play as guest</button>
+      </div>
       <p className="hint">
-        Pick a username and a PIN. First time using that name creates the account; after that, the same PIN signs you
-        back in — on any device.
+        {guest ? "Just a name. No account, saved stats, or leaderboard entry. Your session and notes disappear when you refresh or close this page." : "Pick a username and a PIN. First time using that name creates the account; after that, the same PIN signs you back in — on any device."}
       </p>
       <form onSubmit={handleSubmit} className="form">
         <label>
-          Username
+          {guest ? "Guest name" : "Username"}
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -41,7 +45,7 @@ export default function SignIn({ onSignedIn }) {
             required
           />
         </label>
-        <label>
+        {!guest && <label>
           PIN (4-6 digits)
           <input
             value={pin}
@@ -54,10 +58,10 @@ export default function SignIn({ onSignedIn }) {
             maxLength={6}
             required
           />
-        </label>
+        </label>}
         {error && <p className="hint" style={{ color: "#ff8a80" }}>{error}</p>}
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? "Signing in…" : "Enter the mansion →"}
+          {busy ? "Signing in…" : guest ? "Continue as guest →" : "Enter the mansion →"}
         </button>
       </form>
     </div>

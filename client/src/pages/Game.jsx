@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { gameStorage } from "../auth";
 import { socket } from "../socket";
 import Notepad, { notepadStorageKey } from "../components/Notepad";
 import CaseBriefing from "../components/CaseBriefing";
@@ -138,11 +139,11 @@ export default function Game({ code, playerId, state, onLeave }) {
   );
 
   const [briefingOpen, setBriefingOpen] = useState(() => {
-    try { return !sessionStorage.getItem(`cluedo-briefing-${code}-${playerId}`); } catch { return true; }
+    try { return !gameStorage().getItem(`cluedo-briefing-${code}-${playerId}`); } catch { return true; }
   });
   function closeBriefing() {
     setBriefingOpen(false);
-    try { sessionStorage.setItem(`cluedo-briefing-${code}-${playerId}`, "seen"); } catch { /* Storage is optional. */ }
+    try { gameStorage().setItem(`cluedo-briefing-${code}-${playerId}`, "seen"); } catch { /* Storage is optional. */ }
   }
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [accuseOpen, setAccuseOpen] = useState(false);
@@ -973,7 +974,7 @@ function FinishedScreen({ code, playerId, state, onLeave }) {
     submittedRef.current = true;
     let marks = {};
     try {
-      marks = JSON.parse(localStorage.getItem(notepadStorageKey(code)) || "{}");
+      marks = JSON.parse(gameStorage().getItem(notepadStorageKey(code)) || "{}");
     } catch {
       marks = {};
     }

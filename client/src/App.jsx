@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { socket, setAuthToken } from "./socket";
-import { getStoredToken, storeToken, clearToken, fetchMe } from "./auth";
+import { getStoredToken, storeToken, clearToken, fetchMe, setGuestSession, gameStorage } from "./auth";
 import { titleFor } from "./titles";
 import SignIn from "./pages/SignIn";
 import Home from "./pages/Home";
@@ -20,11 +20,11 @@ const SESSION_KEY = "cluedo-session";
 // a finished game every time they revisited the home URL.
 function loadSession() {
   if (!/^\/join\//.test(window.location.pathname)) {
-    localStorage.removeItem(SESSION_KEY);
+    gameStorage().removeItem(SESSION_KEY);
     return null;
   }
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+    return JSON.parse(gameStorage().getItem(SESSION_KEY) || "null");
   } catch {
     return null;
   }
@@ -51,6 +51,7 @@ export default function App() {
     fetchMe(token)
       .then((me) => {
         setAccount(me);
+        setGuestSession(false);
         setAuthToken(token);
       })
       .catch(() => {
@@ -60,13 +61,16 @@ export default function App() {
   }, []);
 
   function handleSignedIn(data) {
-    storeToken(data.token);
+    setGuestSession(!!data.isGuest);
+    session.current = null;
+    if (!data.isGuest) storeToken(data.token);
     const { token, ...account } = data;
     setAccount(account);
     setAuthToken(data.token);
   }
 
   function handleSignOut() {
+    socket.emit("leaveGame");
     clearToken();
     setAuthToken(null);
     setAccount(null);
@@ -74,13 +78,14 @@ export default function App() {
     setPlayerId(null);
     setState(null);
     session.current = null;
-    localStorage.removeItem(SESSION_KEY);
+    gameStorage().removeItem(SESSION_KEY);
     window.history.replaceState(null, "", "/");
+    setGuestSession(false);
   }
 
   const resetToHome = useCallback(() => {
     session.current = null;
-    localStorage.removeItem(SESSION_KEY);
+    gameStorage().removeItem(SESSION_KEY);
     setCode(null);
     setPlayerId(null);
     setState(null);
@@ -107,7 +112,7 @@ export default function App() {
       setPlayerId(playerId);
       setError(null);
       session.current = { code, playerId };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session.current));
+      gameStorage().setItem(SESSION_KEY, JSON.stringify(session.current));
       window.history.replaceState(null, "", `/join/${code}`);
     }
     function onState(newState) {
@@ -147,11 +152,11 @@ export default function App() {
   // header chip's wins/streak/badges update without needing a reload.
   const refreshedForRef = useRef(null);
   useEffect(() => {
-    if (state?.status !== "finished" || refreshedForRef.current === code) return;
+    if (account?.isGuest || state?.status !== "finished" || refreshedForRef.current === code) return;
     refreshedForRef.current = code;
     const token = getStoredToken();
     if (token) fetchMe(token).then(setAccount).catch(() => {});
-  }, [state?.status, code]);
+  }, [state?.status, code, account?.isGuest]);
 
   let content;
   if (checkingSession) {
@@ -177,7 +182,7 @@ export default function App() {
           {account && (
             <div className="account-chip">
               <span className="account-chip-main">
-                {account.username} <span className="account-title">{titleFor(account.wins)}</span> · {account.wins}🏆
+                {account.username} {account.isGuest ? <span className="account-title">Guest</span> : <><span className="account-title">{titleFor(account.wins)}</span> · {account.wins}🏆</>}
                 {account.currentStreak > 1 && <span className="account-streak"> 🔥{account.currentStreak}</span>}
               </span>
               {(account.sherlockCount > 0 || account.untouchableCount > 0 || account.comebackCount > 0) && (

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "./db.js";
@@ -55,6 +56,14 @@ export async function registerOrLogin(username, pin) {
   return { token: issueToken(row), user: toPublicUser(row) };
 }
 
+// Guest identities are signed but never inserted into the accounts database.
+export function createGuest(username) {
+  const name = typeof username === "string" ? username.trim() : "";
+  if (!USERNAME_RE.test(name)) throw new Error("Name must be 2-20 characters (letters, numbers, spaces, - or _)");
+  const user = { userId: null, username: name, isGuest: true, guestId: randomUUID() };
+  return { token: jwt.sign(user, JWT_SECRET, { expiresIn: "12h" }), ...user };
+}
+
 export function verifyToken(token) {
   return jwt.verify(token, JWT_SECRET); // throws if invalid/expired
 }
@@ -103,6 +112,7 @@ export async function getMenace() {
 // - winnerAchievements: { sherlock, untouchable, comeback } booleans, only
 //   meaningful when there's a winner.
 export async function recordGameResult(participantUserIds, wrongUserIds, winnerUserId, winnerAchievements = {}) {
+  if (participantUserIds.length === 0) return;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

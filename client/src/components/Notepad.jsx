@@ -1,3 +1,4 @@
+import { gameStorage } from "../auth";
 import { useEffect, useState } from "react";
 
 // Scoped per room code so a new game starts with a blank sheet instead of
@@ -16,7 +17,7 @@ export default function Notepad({ cardSets, players, selfId, code }) {
   const storageKey = notepadStorageKey(code);
   const [marks, setMarks] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(storageKey) || "{}");
+      return JSON.parse(gameStorage().getItem(storageKey) || "{}");
     } catch {
       return {};
     }
@@ -24,14 +25,14 @@ export default function Notepad({ cardSets, players, selfId, code }) {
 
   useEffect(() => {
     try {
-      setMarks(JSON.parse(localStorage.getItem(storageKey) || "{}"));
+      setMarks(JSON.parse(gameStorage().getItem(storageKey) || "{}"));
     } catch {
       setMarks({});
     }
   }, [storageKey]);
 
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(marks));
+    gameStorage().setItem(storageKey, JSON.stringify(marks));
   }, [marks, storageKey]);
 
   function cycle(key) {
