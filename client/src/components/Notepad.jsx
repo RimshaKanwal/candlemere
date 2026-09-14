@@ -18,8 +18,8 @@ const SECTIONS = [
 
 // The sheet runs to 31 rows at 8 players but the drawer is short, so size the
 // card rows to whatever is left after the column header and the section bands.
-// Scrolling a deduction grid is the one thing it must not do — you read it by
-// comparing rows against each other, which only works if they're all in view.
+// Keep a readable minimum; smaller screens may scroll rather than shrinking
+// the evidence into unreadable rows.
 function useFitRows(scrollRef, cardRowCount) {
   const [rowH, setRowH] = useState(null);
   useEffect(() => {
@@ -33,7 +33,7 @@ function useFitRows(scrollRef, cardRowCount) {
       const head = table.tHead?.offsetHeight || 0;
       const bands = [...table.querySelectorAll(".notepad-section-row")].reduce((sum, r) => sum + r.offsetHeight, 0);
       const avail = el.clientHeight - head - bands;
-      setRowH(Math.max(12, Math.min(26, Math.floor(avail / cardRowCount) - 1)));
+      setRowH(Math.max(22, Math.min(28, Math.floor(avail / cardRowCount) - 1)));
     };
     measure();
     const ro = new ResizeObserver(measure);

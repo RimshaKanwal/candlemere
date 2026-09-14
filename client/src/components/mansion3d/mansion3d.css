@@ -1,31 +1,86 @@
-.mansion-3d { position:relative; width:100%; height:100%; min-height:350px; overflow:hidden; border:1px solid #71827066; border-radius:9px; background:#10231f; isolation:isolate; }
+.mansion-3d {
+  position:relative; display:flex; flex-direction:column; width:100%; height:100%;
+  min-height:520px; overflow:hidden; border:1px solid #6c775955; border-radius:10px;
+  background:#101e19; isolation:isolate; color:#eee6d3;
+}
+.explorer-header { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; background:linear-gradient(110deg,#1e3027,#14251e); border-bottom:1px solid #b6a66c33; }
+.explorer-kicker { display:block; color:#b8a777; text-transform:uppercase; letter-spacing:1.8px; font:600 10px/1.5 system-ui; }
+.explorer-location { min-width:0; }
+.explorer-location h3 { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:3px 0 0; font:30px/1.1 Georgia,serif; color:#f0e7ce; }
+.location-pill { display:inline-flex; padding:4px 7px; border-radius:4px; border:1px solid #7d9c7066; color:#b8d1aa; font:11px/1.2 system-ui; white-space:nowrap; }
+.explorer-header-actions { display:flex; gap:6px; align-items:center; }
+.explorer-header button,.explorer-camera button,.room-stepper button { min-height:38px; border:1px solid #a3a16e40; border-radius:5px; background:#12251f; color:#e5dcc3; font:12px system-ui; padding:8px 11px; cursor:pointer; white-space:nowrap; }
+.explorer-header button:hover,.explorer-camera button:hover,.room-stepper button:hover { border-color:#d6b879; background:#30422e; }
+.explorer-header .map-return { color:#e1c58b; }
+.explorer-viewport { position:relative; flex:1 1 auto; min-height:300px; overflow:hidden; background:radial-gradient(ellipse at 50% 65%,#2c3c30,#14221f 70%); }
 .mansion-3d-canvas { position:absolute; inset:0; }
-.mansion-3d-canvas canvas { display:block; width:100%; height:100%; touch-action:none; outline:none; }
-.scene-badge { position:absolute; top:17px; left:17px; display:flex; align-items:center; gap:7px; font:600 9px system-ui; letter-spacing:1.8px; color:#e7dbb9; pointer-events:none; text-shadow:0 1px 4px #000; }
-.scene-badge>span { width:5px; height:5px; border-radius:50%; background:#9ee2b2; box-shadow:0 0 9px #7ee1a0; }
-.scene-badge small { padding:3px 5px; border:1px solid #d9ba7c66; border-radius:3px; color:#d9ba7c; letter-spacing:0; }
-.scene-camera { position:absolute; top:12px; right:12px; display:flex; gap:3px; padding:4px; border:1px solid #a9a37940; border-radius:6px; background:#0d211dd9; backdrop-filter:blur(10px); }
-.scene-camera button,.scene-nav select,.inspector-actions button { min-height:30px; border:1px solid transparent; background:transparent; color:#e6dfc5; font:11px system-ui; padding:6px 9px; border-radius:3px; cursor:pointer; }
-.scene-camera button:hover,.scene-camera button[aria-pressed=true] { background:#c6ac7130; color:#f2d697; }
-.scene-bottom { position:absolute; bottom:12px; left:12px; right:12px; display:flex; flex-direction:column; align-items:flex-start; pointer-events:none; gap:9px; }
-.scene-nav { display:flex; align-items:center; flex-wrap:wrap; gap:7px; width:100%; padding:7px; border:1px solid #a9a37940; border-radius:5px; background:#0d211dea; backdrop-filter:blur(10px); pointer-events:auto; }
-.scene-nav select { background:#20372c; border-color:#56624c; max-width:170px; }
-.scene-nav option { background:#20372c; }
-.scene-gesture { color:#a8bcad; font-size:9px; margin-left:auto; padding-right:4px; }
-.scene-hover { position:absolute; left:50%; top:59px; transform:translateX(-50%); padding:6px 12px; border-radius:4px; background:#0b1d17e8; color:#e6d2a4; font-size:10px; pointer-events:none; white-space:nowrap; }
-.room-inspector { width:270px; max-width:100%; position:relative; pointer-events:auto; background:linear-gradient(130deg,#20372af5,#10271ef5); backdrop-filter:blur(14px); border:1px solid #bc9e5d77; border-radius:6px; padding:17px; box-shadow:0 12px 30px #0005; }
-.room-inspector h3 { font:25px Georgia,serif; margin:7px 0; color:#efe5c9; }
-.room-inspector p { font:11px/1.7 system-ui; color:#b7c6b8; }
-.room-inspector small { display:block; color:#8cc6b3; font-size:9px; margin-top:10px; }
-.inspector-close { position:absolute; right:8px; top:6px; border:0; background:none; color:#cdbb8a; font-size:20px; cursor:pointer; }
-.inspector-actions { display:flex; gap:7px; margin-top:12px; }
-.inspector-actions button { border-color:#9e8b5d77; background:#d9ba7c15; color:#e5ce97; }
-.scene-loading { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:16px; color:#d9ba7c; background:#10231f; z-index:5; font:20px Georgia,serif; }
-.scene-loading button { padding:12px; background:#d9ba7c; color:#14251c; border:0; border-radius:5px; cursor:pointer; }
+.mansion-3d-canvas canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+.mansion-3d-canvas canvas:active { cursor:grabbing; }
+.world-labels { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.world-room-label,.world-player-label { position:absolute; left:0; top:0; width:max-content; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid #c4b07a99; border-radius:5px; background:#10231ef5; color:#fff2d2; padding:8px 12px; font:600 14px/1.2 system-ui,sans-serif; box-shadow:0 3px 12px #0005; pointer-events:auto; cursor:pointer; }
+.world-room-label:hover,.world-room-label:focus-visible { background:#c9ad73; color:#11281d; border-color:#f4db9e; z-index:5; }
+.world-room-label.is-reachable { border-color:#ddc58a; box-shadow:0 0 0 2px #d4b77740,0 4px 16px #0007; }
+.world-room-label.is-reachable::before { content:'•'; color:#c9e0a6; margin-right:6px; }
+.world-player-label { font-size:12px; padding:5px 9px; color:#203328; background:#ecdfbc; border-color:#f0d9a1; pointer-events:none; cursor:default; }
+.world-labels [hidden] { display:none !important; }
+.explorer-view-caption { position:absolute; top:16px; left:20px; color:#d0c194; font:600 10px/1.6 system-ui; letter-spacing:1.8px; pointer-events:none; text-shadow:0 1px 3px #000; }
+.explorer-view-caption span { display:block; font-size:12px; letter-spacing:0; color:#bdc6b6; font-weight:400; }
+.explorer-camera { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:4px; border:1px solid #b9ab7844; border-radius:8px; padding:5px; background:#0b1d18ed; backdrop-filter:blur(12px); box-shadow:0 5px 20px #0004; }
+.explorer-camera button { border:0; min-width:36px; min-height:36px; font-size:18px; padding:4px 8px; background:transparent; }
+.explorer-camera button.camera-reset,.explorer-camera button[aria-pressed] { font-size:12px; padding:5px 11px; }
+.explorer-camera button[aria-pressed=true] { background:#d3bd7e24; color:#e6ce96; }
+.room-stepper { position:absolute; right:15px; top:15px; display:flex; gap:5px; align-items:center; }
+.room-stepper span { font:11px system-ui; color:#c1c8b6; padding:0 4px; }
+.room-stepper button { min-width:34px; min-height:34px; padding:5px; }
+.room-browser { display:flex; flex:none; gap:7px; overflow-x:auto; padding:10px 12px; border-top:1px solid #abb18033; border-bottom:1px solid #abb18033; background:#12251e; scrollbar-width:thin; scrollbar-color:#647452 #12251e; }
+.room-choice { display:flex; flex:0 0 auto; align-items:center; gap:9px; text-align:left; border:1px solid #64745255; border-radius:6px; background:#1b2f25; padding:6px 10px 6px 6px; color:#dedcc7; cursor:pointer; min-width:149px; transition:background .18s,border-color .18s; }
+.room-choice:hover { background:#314531; border-color:#a99965; }
+.room-choice.selected { border-color:#cfb77d; background:#3a4630; box-shadow:inset 0 -2px #cfb77d; }
+.room-choice-art { width:39px; height:39px; flex-shrink:0; border-radius:3px; background-image:url('/art/mansion-rooms.jpg'); background-size:400% 300%; }
+.room-choice-text b { display:block; font:500 13px/1.2 system-ui; }
+.room-choice-text small { display:block; font:11px/1.2 system-ui; color:#acbba4; margin-top:5px; }
+.room-choice-text .reachable-text { color:#d9ce9c; }
+.explorer-actionbar { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 18px; background:linear-gradient(110deg,#1e3025,#12251e); }
+.explorer-actionbar strong { font:500 15px/1.4 system-ui; color:#f1e3bd; }
+.explorer-actionbar p { font:12px/1.5 system-ui; color:#bdc7b3; margin:3px 0 0; }
+.explorer-actionbar small { display:block; font:11px/1.4 system-ui; color:#90bbaa; margin-top:3px; }
+.explorer-move { flex-shrink:0; min-height:43px; max-width:230px; background:linear-gradient(110deg,#e0c88f,#b89b5f); border:1px solid #f2d69b; border-radius:5px; color:#192a20; padding:10px 16px; font:600 13px system-ui; cursor:pointer; }
+.explorer-move:disabled { background:#25382b; border-color:#506143; color:#a4b29b; cursor:default; }
+.scene-loading { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px; background:#14221f; color:#e5cca0; font:21px Georgia,serif; z-index:10; }
+.scene-loading button { background:#d2b77b; border:0; padding:12px; border-radius:5px; color:#152b1e; cursor:pointer; }
 .board-view-switch { display:flex; flex-shrink:0; padding:3px; gap:2px; border:1px solid #d9ba7c44; border-radius:5px; }
-.board-view-switch button { border:0; border-radius:3px; padding:6px 9px; font-size:10px; background:transparent; color:#adbba9; cursor:pointer; }
+.board-view-switch button { min-height:32px; border:0; border-radius:3px; padding:6px 10px; font-size:12px; background:transparent; color:#c2cbb9; cursor:pointer; }
 .board-view-switch button[aria-pressed=true] { background:#d9ba7c; color:#14291e; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-.board-stage:has(.mansion-3d) { min-height:350px; }
-@media(max-width:1100px) { .scene-badge { top:58px; font-size:8px; } .scene-gesture { display:none; } .scene-camera { left:12px; right:auto; } }
-@media(max-width:680px) { .board-stage:has(.mansion-3d) { height:530px; } .scene-camera { gap:0; } .scene-camera button { padding:7px 9px; } .room-inspector { padding:12px; width:240px; } .room-inspector h3 { font-size:22px; } .scene-nav select { max-width:145px; } .mansion-heading { flex-wrap:wrap; } }
+.board-stage:has(.mansion-3d) { min-height:520px; }
+.mansion-3d.is-expanded { position:fixed; inset:12px; width:auto; height:auto; min-height:0; z-index:90; box-shadow:0 0 0 30px #08110eea; }
+.mansion-3d.is-expanded .explorer-header { padding:18px 26px; }
+.mansion-3d.is-expanded .explorer-location h3 { font-size:35px; }
+.mansion-3d.is-expanded .room-browser { justify-content:center; }
+@media(max-width:1250px) { .explorer-header { padding:13px; } .explorer-location h3 { font-size:25px; } .explorer-header-actions { gap:4px; } .explorer-header button { font-size:11px; padding:6px 8px; } .location-pill { display:none; } .explorer-actionbar { padding:12px; } .explorer-actionbar p { max-width:270px; } .explorer-move { padding:9px 12px; max-width:175px; } }
+@media(max-width:680px) {
+  .board-stage:has(.mansion-3d) { height:670px; }
+  .mansion-3d { min-height:0; }
+  .explorer-header { align-items:flex-start; flex-wrap:wrap; gap:10px; padding:12px; }
+  .explorer-location h3 { font-size:27px; }
+  .explorer-header-actions { margin-left:auto; }
+  .explorer-header button { min-height:36px; }
+  .explorer-viewport { min-height:300px; }
+  .explorer-view-caption { top:12px; left:12px; font-size:9px; }
+  .explorer-view-caption span { font-size:11px; max-width:155px; }
+  .room-stepper { right:10px; top:10px; }
+  .world-room-label { font-size:13px; padding:7px 9px; }
+  .explorer-camera { gap:0; bottom:10px; padding:3px; }
+  .explorer-camera button { min-width:34px; }
+  .explorer-camera button.camera-reset { padding:5px 8px; }
+  .room-browser { padding:8px; gap:6px; }
+  .room-choice { min-width:145px; }
+  .explorer-actionbar { align-items:stretch; flex-direction:column; gap:8px; padding:11px 12px; }
+  .explorer-actionbar p { max-width:none; }
+  .explorer-actionbar small { display:none; }
+  .explorer-move { max-width:none; min-height:39px; }
+  .mansion-3d.is-expanded { inset:4px; }
+  .mansion-3d.is-expanded .room-browser { justify-content:flex-start; }
+  .mansion-3d.is-expanded .explorer-header { padding:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .room-choice { transition:none; } }
