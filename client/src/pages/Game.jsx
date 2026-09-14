@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { gameStorage } from "../auth";
 import { socket } from "../socket";
 import Notepad, { notepadStorageKey } from "../components/Notepad";
 import CaseBriefing from "../components/CaseBriefing";
 import NotesReveal from "../components/NotesReveal";
 import { sfx, soundEnabled, toggleSound } from "../sound";
+
+const Mansion3D = lazy(() => import("../components/Mansion3D"));
 
 // Set to true after dropping real image files into client/public/art/…
 // (see README). Files are looked up by slug, e.g.
@@ -125,6 +127,7 @@ export default function Game({ code, playerId, state, onLeave }) {
     return state.turnOrder.map((id) => byId[id]).filter(Boolean);
   }, [state.players, state.turnOrder]);
 
+  const [boardView, setBoardView] = useState("3d");
   const tableRef = useRef(null);
   const cell = useFitCell(tableRef, board.rows, board.cols);
 
@@ -463,10 +466,11 @@ export default function Game({ code, playerId, state, onLeave }) {
         <div className="mansion-heading">
           <div className="mansion-title"><span className="eyebrow">The scene of the crime</span><h2>The Mansion <span>at midnight</span></h2></div>
           <div className={`investigation-cue ${myActive ? "your-move" : ""}`}><span className="live-spark" /><span>{cue}</span></div>
+          <div className="board-view-switch" aria-label="Board view"><button aria-pressed={boardView === "3d"} onClick={() => setBoardView("3d")}>3D mansion</button><button aria-pressed={boardView === "2d"} onClick={() => setBoardView("2d")}>2D map</button></div>
           <button className="briefing-trigger" onClick={() => setBriefingOpen(true)}>Case briefing ↗</button>
         </div>
         <div className="board-stage" ref={tableRef}>
-          <Board
+          {boardView === "3d" ? <Suspense fallback={<div className="scene-loading">Opening the mansion…</div>}><Mansion3D board={board} players={state.players} playerId={playerId} currentPlayerId={state.currentPlayerId} canMove={canMove} reachableCellSet={reachableCellSet} reachableRoomSet={reachableRoomSet} onMoveCell={moveToCell} onMoveRoom={moveToRoom} onFallback={() => setBoardView("2d")} /></Suspense> : <Board
             board={board}
             cell={cell}
             players={state.players}
@@ -478,7 +482,7 @@ export default function Game({ code, playerId, state, onLeave }) {
             shaking={boardShaking}
             zooming={!!zoomRoom}
             zoomOrigin={zoomOrigin}
-          />
+          />}
           {boardShaking && <div className="wrong-flash" />}
         </div>
 
