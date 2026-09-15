@@ -220,3 +220,12 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .finale-evidence .play-card-icon { width:90px; height:96px; }
 @keyframes evidence-arrives { from {opacity:0;transform:translateY(15px) rotateY(35deg)} to {opacity:1;transform:none} }
 @media(prefers-reduced-motion:reduce) { .revealed-evidence,.finale-evidence > div {animation:none;} }
+
+/* The sheet is read whole, so it has to fit the drawer's width rather than
+   scroll sideways: fixed columns share the space, and a long player name
+   wraps instead of pushing the table past the edge. */
+.notepad .notepad-table { table-layout:fixed; }
+.notepad .notepad-table thead .notepad-rowhead { width:38%; }
+.notepad .notepad-colhead { white-space:normal; overflow-wrap:anywhere; }
+.notepad .rowname-btn { display:block; overflow:hidden; text-overflow:ellipsis; }
+.notepad .notepad-cell { min-width:0; }
