@@ -5,16 +5,33 @@
 let ctx = null;
 let enabled = localStorage.getItem("cluedo-sound") !== "off";
 
+const levels = { effects: .8, ambience: .35, music: .4 };
+try { const saved=JSON.parse(localStorage.getItem('cluedo-audio-levels')||'{}');for(const channel of Object.keys(levels))if(Number.isFinite(saved[channel]))levels[channel]=Math.max(0,Math.min(1,saved[channel])); } catch { /* Optional preferences. */ }
+let channels = null;
+const clips = new Map();
+function updateClips() { for(const [audio,volume] of clips)audio.volume=enabled?volume*levels.effects:0; }
+export function audioLevels() { return {...levels}; }
+export function setAudioLevel(channel, value) {
+  if(!(channel in levels)||!Number.isFinite(value))return;
+  levels[channel]=Math.max(0,Math.min(1,value));
+  updateClips();
+  if(channels)channels[channel].gain.setTargetAtTime(enabled?levels[channel]:0,ctx.currentTime,.06);
+  try {localStorage.setItem('cluedo-audio-levels',JSON.stringify(levels));}catch { /* Optional preferences. */ }
+}
+
 function audioCtx() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (AC) ctx = new AC();
+    if (AC) {
+      ctx = new AC();channels={};
+      for(const channel of Object.keys(levels)){const gain=ctx.createGain();gain.gain.value=enabled?levels[channel]:0;gain.connect(ctx.destination);channels[channel]=gain;}
+    }
   }
-  if (ctx && ctx.state === "suspended") ctx.resume();
+  if (ctx && ctx.state === "suspended") ctx.resume().catch(()=>{});
   return ctx;
 }
 
-function beep(freq, start, dur, { type = "sine", gain = 0.08 } = {}) {
+function beep(freq, start, dur, { type = "sine", gain = 0.08, channel = "effects" } = {}) {
   const ac = audioCtx();
   if (!ac) return;
   const t0 = ac.currentTime + start;
@@ -25,12 +42,12 @@ function beep(freq, start, dur, { type = "sine", gain = 0.08 } = {}) {
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(g).connect(ac.destination);
+  osc.connect(g).connect(channels[channel]);
   osc.start(t0);
   osc.stop(t0 + dur + 0.02);
 }
 
-function noise(start, dur, gain = 0.06) {
+function noise(start, dur, gain = 0.06, channel = "effects") {
   const ac = audioCtx();
   if (!ac) return;
   const t0 = ac.currentTime + start;
@@ -41,7 +58,7 @@ function noise(start, dur, gain = 0.06) {
   src.buffer = buf;
   const g = ac.createGain();
   g.gain.value = gain;
-  src.connect(g).connect(ac.destination);
+  src.connect(g).connect(channels[channel]);
   src.start(t0);
 }
 
@@ -53,8 +70,10 @@ const TURN_NAG_CLIP = "/sounds/turn-nag.mp3";
 
 function playClip(src, volume = 0.6) {
   const audio = new Audio(src);
-  audio.volume = volume;
-  audio.play().catch(() => {}); // ignore autoplay-policy rejections
+  audio.volume = enabled ? volume * levels.effects : 0;
+  clips.set(audio,volume);
+  const release=()=>clips.delete(audio);audio.addEventListener('ended',release,{once:true});audio.addEventListener('error',release,{once:true});
+  audio.play().catch(release); // ignore autoplay-policy rejections
 }
 
 export const sfx = {
@@ -66,7 +85,7 @@ export const sfx = {
   },
   door() { if (enabled) { noise(0,.2,.016); beep(110,.1,.16,{gain:.025}); } },
   passage() { if (enabled) [180,135,90].forEach((f,i)=>beep(f,i*.15,.35,{gain:.025})); },
-  piano() { if (enabled) [261.63,311.13,392,523.25,466.16,392].forEach((f,i)=>beep(f,i*.19,.65,{gain:.045,type:'triangle'})); },
+  piano(volume = 1) { if (enabled && volume > 0) [261.63,311.13,392,523.25,466.16,392].forEach((f,i)=>beep(f,i*.19,.65,{gain:.045*volume,type:'triangle',channel:'music'})); },
   discovery() { if (enabled) { beep(523,0,.25,{gain:.035});beep(784,.15,.45,{gain:.035}); } },
   dice() {
     if (!enabled) return;
@@ -126,7 +145,45 @@ export function soundEnabled() {
 
 export function toggleSound() {
   enabled = !enabled;
+  updateClips();
   localStorage.setItem("cluedo-sound", enabled ? "on" : "off");
+  if(channels)for(const channel of Object.keys(levels))channels[channel].gain.setTargetAtTime(enabled?levels[channel]:0,ctx.currentTime,.04);
   if (enabled) sfx.turn();
   return enabled;
+}
+
+// One ambience controller per mansion. Short scheduled sounds and a looping,
+// filtered noise bed fade between rooms, and stop when the view is disposed.
+export function createRoomAmbience() {
+  let room=null, bed=null, filter=null, source=null, lastTick=0, lastMusic=0, disposed=false;
+  function stopBed() { if(source){source.stop();source.disconnect();source=null;}bed?.disconnect();filter?.disconnect();bed=null;filter=null; }
+  function update() {
+    if(disposed)return;
+    const active=enabled&&!document.hidden&&room&&navigator.userActivation?.hasBeenActive!==false;
+    if(!active){if(bed)bed.gain.setTargetAtTime(0,ctx.currentTime,.15);return;}
+    const ac=audioCtx();if(!ac)return;
+    if(!source){
+      const buffer=ac.createBuffer(1,ac.sampleRate*3,ac.sampleRate);
+      const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+      source=ac.createBufferSource();source.buffer=buffer;source.loop=true;
+      filter=ac.createBiquadFilter();filter.type='lowpass';bed=ac.createGain();bed.gain.value=0;
+      source.connect(filter).connect(bed).connect(channels.ambience);source.start();
+    }
+    const rain=room==='Conservatory', fire=room==='Lounge', now=ac.currentTime;
+    filter.frequency.setTargetAtTime(rain?1700:fire?450:170,now,.35);
+    bed.gain.setTargetAtTime(rain?.11:fire?.055:.009,now,.4);
+    if(now-lastTick>1){
+      if(room==='Study')beep(1100,0,.025,{gain:.028,channel:'ambience'});
+      if(fire)noise(0,.035,.025,'ambience');
+      lastTick=now;
+    }
+    if(room==='Ballroom'&&now-lastMusic>12){
+      [261.63,311.13,392,349.23].forEach((f,i)=>beep(f,i*.6,1.1,{gain:.009,channel:'music',type:'triangle'}));lastMusic=now;
+    }
+  }
+  const timer=setInterval(update,200);
+  return {
+    setRoom(next){if(next!==room){room=next;lastMusic=ctx?.currentTime||0;}},
+    dispose(){disposed=true;clearInterval(timer);stopBed();},
+  };
 }

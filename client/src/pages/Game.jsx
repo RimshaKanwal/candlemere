@@ -520,7 +520,7 @@ export default function Game({ code, playerId, state, onLeave }) {
           <button className="briefing-trigger" onClick={() => setBriefingOpen(true)}>Case briefing ↗</button>
         </div>
         <div className="board-stage" ref={tableRef}>
-          {boardView === "3d" ? <Suspense fallback={<div className="scene-loading">Opening the mansion…</div>}><Mansion3D code={code} roomWalks={state.roomWalks} gameActions={turnActions} gameStatus={statusLine} board={board} players={state.players} playerId={playerId} currentPlayerId={state.currentPlayerId} canMove={canMove} reachableCellSet={reachableCellSet} reachableRoomSet={reachableRoomSet} onMoveCell={moveToCell} onMoveRoom={moveToRoom} onFallback={() => setBoardView("2d")} /></Suspense> : <Board
+          {boardView === "3d" ? <Suspense fallback={<div className="scene-loading">Opening the mansion…</div>}><Mansion3D code={code} roomWalks={state.roomWalks} roomInteractions={state.roomInteractions} gameActions={turnActions} gameStatus={statusLine} board={board} players={state.players} playerId={playerId} currentPlayerId={state.currentPlayerId} canMove={canMove} reachableCellSet={reachableCellSet} reachableRoomSet={reachableRoomSet} onMoveCell={moveToCell} onMoveRoom={moveToRoom} onFallback={() => setBoardView("2d")} /></Suspense> : <Board
             board={board}
             cell={cell}
             players={state.players}

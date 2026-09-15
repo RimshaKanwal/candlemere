@@ -1,3 +1,4 @@
+import { audioLevels, setAudioLevel } from '../sound';
 import { reachableDoorway } from './mansion3d/navigation';
 import { socket } from '../socket';
 import { useEffect, useRef, useState } from 'react';
@@ -19,6 +20,8 @@ export default function Mansion3D(props) {
   const [playerNames, setPlayerNames] = useState(true);
   const [objects, setObjects] = useState([]);
   const [discovery, setDiscovery] = useState(null);
+  const [levels, setLevels] = useState(audioLevels);
+  const [activity, setActivity] = useState(null);
   const [passage, setPassage] = useState(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -55,6 +58,8 @@ export default function Mansion3D(props) {
         failed: () => actions.current.failed(),
         objects: setObjects,
         discovery: setDiscovery,
+        activity: setActivity,
+        interact: object => socket.emit('roomInteraction', { ...object, code:latest.current.code, playerId:latest.current.playerId }),
         passage: setPassage,
         walk: pose => socket.volatile.emit('roomWalk', { ...pose, code: latest.current.code, playerId: latest.current.playerId }),
       });
@@ -75,13 +80,14 @@ export default function Mansion3D(props) {
   }, [canMove, ready]);
   useEffect(() => {
     const receive = pose => engine.current?.receiveWalk(pose);
-    socket.on('roomWalk', receive);
-    return () => socket.off('roomWalk', receive);
+    const interact = action => engine.current?.receiveInteraction(action);
+    socket.on('roomWalk', receive);socket.on('roomInteraction', interact);
+    return () => {socket.off('roomWalk', receive);socket.off('roomInteraction', interact);};
   }, []);
   useEffect(() => {
     engine.current?.sync(latest.current);
     if (!canMove) { setCell(null); engine.current?.preview(null); }
-  }, [players, playerId, currentPlayerId, canMove, reachableCellSet, reachableRoomSet, props.roomWalks]);
+  }, [players, playerId, currentPlayerId, canMove, reachableCellSet, reachableRoomSet, props.roomWalks, props.roomInteractions]);
   useEffect(() => {
     if (!expanded) return;
     const previousFocus = document.activeElement;
@@ -117,6 +123,10 @@ export default function Mansion3D(props) {
     if(!passage)return;
     const timer=setTimeout(()=>setPassage(null),1800);return()=>clearTimeout(timer);
   }, [passage]);
+  useEffect(() => {
+    if(!activity)return;
+    const timer=setTimeout(()=>setActivity(null),3200);return()=>clearTimeout(timer);
+  }, [activity]);
   function move() {
     if (doorway) { setTravelling(true); onMoveRoom(doorway); }
     else if (canEnter) {
@@ -156,6 +166,7 @@ export default function Mansion3D(props) {
           <h3>{selected || 'The mansion'}{here && <span className="location-pill">You are here</span>}</h3>
         </div>
         <div className="explorer-header-actions">
+          <details className="audio-settings"><summary>Sound mix</summary><div>{Object.entries(levels).map(([channel,value])=><label key={channel}>{channel}<input aria-label={`${channel} volume`} type="range" min="0" max="100" value={Math.round(value*100)} onChange={event=>{const next=Number(event.target.value)/100;setAudioLevel(channel,next);setLevels({...levels,[channel]:next});}}/><output>{Math.round(value*100)}%</output></label>)}<small>The speaker button mutes all sound.</small></div></details>
           <button aria-pressed={view === 'top'} onClick={() => switchView('top')}>Top view</button>
           <button aria-pressed={view === 'orbit'} onClick={() => switchView('orbit')}>3D view</button>
           <button aria-pressed={view === 'walk'} onClick={() => switchView('walk')}>Walk</button>
@@ -167,6 +178,7 @@ export default function Mansion3D(props) {
       </header>
 
       <div className="explorer-viewport">
+        {activity && <div className="shared-activity" role="status">{activity}</div>}
         {passage && <div className="passage-reveal" role="status"><span>A hidden door opens</span><strong>Through the shadows…</strong><p>Emerging in the {passage}</p></div>}
         {selected && objects.length>0 && <details className="room-interactions" key={selected}><summary>Explore details · {objects.length}</summary><div>{objects.map(object=><button key={object.id} onClick={()=>engine.current?.interact(object.id)}>{object.label}</button>)}</div><small>Or click an object · E when nearby</small></details>}
         {discovery && <aside className="discovery-card" role="status"><button aria-label="Close discovery" onClick={()=>setDiscovery(null)}>×</button><small>MANSION MEMORY · ATMOSPHERE</small><h4>{discovery.title}</h4><p>{discovery.text}</p></aside>}

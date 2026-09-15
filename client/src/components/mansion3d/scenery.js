@@ -23,7 +23,7 @@ export const characterColor = name => COLORS[Math.max(0, NAMES.indexOf(name))];
 export function buildScenery(scene, board) {
   const kit = createMaterials();
   const geometries = new Map(), extraMaterials = new Set(), textures = new Set();
-  const roomGroups = new Map(), roomFloors = new Map(), tiles = new Map(), floorTargets = [], anchors = [], interactions = [], doors = [];
+  const roomGroups = new Map(), roomFloors = new Map(), tiles = new Map(), floorTargets = [], anchors = [], interactions = [], doors = [], details = [];
   const estate = new THREE.Group(); scene.add(estate);
   const gold = '#c6a160', wood = '#85613f', darkWood = '#554030';
   function shape(parent, kind, size, mat, x, y, z) {
@@ -106,6 +106,13 @@ export function buildScenery(scene, board) {
     for(const dx of [-w/2,0,w/2])box(g,x+dx,y,z+.08,.04,h,.06,gold,'metal');
     box(g,x,y,z+.08,w,.05,.07,gold,'metal');
     box(g,x,y-h/2-.06,z+.13,w+.28,.11,.29,'#ccb68e','marble');
+    if(g.userData.room==='Conservatory') {
+      const positions=new Float32Array(24*6);
+      for(let i=0;i<24;i++) {const px=x+(((i*17)%24)/24-.5)*w, py=y-h/2+(i*7%24)/24*h;positions.set([px,py,z+.075,px-.012,py+.09,z+.075],i*6);}
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+      const material=new THREE.LineBasicMaterial({color:'#bfd7e5',transparent:true,opacity:.48});extraMaterials.add(material);
+      const streaks=new THREE.LineSegments(geometry,material);g.add(streaks);details.push({kind:'rain',mesh:streaks,min:y-h/2,max:y+h/2-.1});
+    }
     // A pair of pleated velvet curtains, with brass tiebacks.
     for(const side of [-1,1])for(let i=0;i<3;i++) {
       const curtain=cyl(g,x+side*(w/2+.12)+i*.065,1.8,z+.13,.07,.09,h+.25,'#594b45');curtain.scale.z=.62;
@@ -116,7 +123,7 @@ export function buildScenery(scene, board) {
     box(g,x,.51,z+.26,.98,.76,.04,'#191c18');
     box(g,x,1.24,z+.08,1.75,.15,.68,'#bdaf89','marble');
     box(g,x,.15,z+.25,1.65,.12,.7,darkWood,'marble');
-    for(const dx of [-.25,.1,.3]){const log=cyl(g,x+dx,.28,z+.36,.065,.065,.42,darkWood,'wood');log.rotation.z=1.2;const fire=orb(g,x+dx,.4,z+.36,.12,'#d69548','glow');fire.scale.set(.7,1.6,.5);}
+    for(const dx of [-.25,.1,.3]){const log=cyl(g,x+dx,.28,z+.36,.065,.065,.42,darkWood,'wood');log.rotation.z=1.2;const fire=orb(g,x+dx,.4,z+.36,.12,'#d69548','glow');fire.scale.set(.7,1.6,.5);fire.userData.target={decoration:true};details.push({kind:'fire',mesh:fire,phase:dx*9});}
     candle(g,x-.55,1.35,z+.06);candle(g,x+.55,1.35,z+.06);
   }
   function chandelier(g,x,z,r=.7) {
@@ -220,6 +227,18 @@ export function buildScenery(scene, board) {
       tabletop(group,0,-.2,1.95,1.03);chair(group,0,.67,name==='Study'?'#4c6964':'#8c514b');
       box(group,-.15,1.005,-.15,.55,.02,.45,'#e5dcc0');box(group,.14,1.017,-.19,.055,.025,.37,'#283b31');candle(group,.66,1.01,-.35);
       for(let i=0;i<3;i++)box(group,-.67,1.04+i*.06,-.35,.4,.05,.3,['#965648','#6b8168','#b79b62'][i]);
+      if(name==='Study') {
+        const cx=-w/2+.52, cz=.2;
+        box(group,cx,.95,cz,.65,1.8,.36,darkWood,'wood');
+        box(group,cx,.9,cz+.19,.43,1.1,.025,'#182820');
+        const face=cyl(group,cx,1.63,cz+.23,.23,.23,.04,'#e4d9b7');face.rotation.x=Math.PI/2;
+        for(let tick=0;tick<12;tick++){const angle=tick*Math.PI/6;orb(group,cx+Math.sin(angle)*.19,1.63+Math.cos(angle)*.19,cz+.26,.013,gold,'metal');}
+        box(group,cx,1.69,cz+.27,.018,.14,.014,'#26342a');box(group,cx+.06,1.63,cz+.27,.14,.018,.014,'#26342a');
+        const pendulum=new THREE.Group();pendulum.position.set(cx,1.35,cz+.25);group.add(pendulum);
+        const rod=box(pendulum,0,-.3,0,.025,.6,.025,gold,'metal');rod.userData.target={decoration:true};
+        const bob=orb(pendulum,0,-.63,0,.105,gold,'metal');bob.scale.z=.25;bob.userData.target={decoration:true};
+        details.push({kind:'clock',mesh:pendulum});
+      }
       if(name==='Library'){const reading=new THREE.Group();reading.position.set(-w/2+.65,0,.35);reading.rotation.y=Math.PI/2;group.add(reading);shelf(reading,0,0,1.5);}
     }else if(name==='Lounge'){
       fireplace(group,-1.25,back);painting(group,-1.25,2.08,-d/2+.16,4,.86,.8);windowFrame(group,1.2,-d/2+.14,.85,1.35);
@@ -330,5 +349,12 @@ export function buildScenery(scene, board) {
     return {group,body,legs:limbs,ring:halo,route:[],lastPosition:null};
   }
   return {estate,roomGroups,roomFloors,tiles,floorTargets,anchors,interactions,doors,avatar,material:kit.material,
+    animate(dt,time,reduced) {
+      for(const detail of details) {
+        if(detail.kind==='fire')detail.mesh.scale.y=reduced?1.6:1.6+Math.sin(time*9+detail.phase)*.22;
+        if(detail.kind==='clock')detail.mesh.rotation.z=reduced?0:Math.sin(time*Math.PI*2)*.18;
+        if(detail.kind==='rain'&&!reduced){const attribute=detail.mesh.geometry.attributes.position;for(let i=0;i<attribute.array.length;i+=6){let y=attribute.array[i+1]-dt*.7;if(y<detail.min)y=detail.max;attribute.array[i+1]=y;attribute.array[i+4]=y+.09;}attribute.needsUpdate=true;}
+      }
+    },
     dispose(){geometries.forEach(g=>g.dispose());extraMaterials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());kit.dispose();}};
 }

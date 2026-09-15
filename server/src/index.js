@@ -1,3 +1,4 @@
+import { bindRoomInteractions, interactionSnapshot } from './game/roomInteractions.js';
 import { bindRoomWalking, walkingSnapshot } from './game/roomWalking.js';
 import http from "node:http";
 import express from "express";
@@ -83,7 +84,7 @@ function broadcastState(code) {
   const room = manager.getRoom(code);
   if (!room) return;
   for (const player of room.players) {
-    io.to(player.socketId).emit("state", { ...room.toClientState(player.id), roomWalks: walkingSnapshot(room) });
+    io.to(player.socketId).emit("state", { ...room.toClientState(player.id), roomWalks: walkingSnapshot(room), roomInteractions: interactionSnapshot(room) });
   }
 }
 
@@ -127,7 +128,7 @@ function leavePreviousRoom(socket) {
 
 io.on("connection", (socket) => {
   socket.use(([event, payload], next) => {
-    const seatActions = ["roomWalk", "startGame", "rollDice", "movePlayer", "useSecretPassage", "makeSuggestion", "respondSuggestion", "makeAccusation", "endTurn", "sendReaction", "submitFinalNotes"];
+    const seatActions = ["roomInteraction", "roomWalk", "startGame", "rollDice", "movePlayer", "useSecretPassage", "makeSuggestion", "respondSuggestion", "makeAccusation", "endTurn", "sendReaction", "submitFinalNotes"];
     if (seatActions.includes(event) && (!socket.data.playerId || payload?.playerId !== socket.data.playerId || payload?.code !== socket.data.code)) {
       socket.emit("errorMessage", "This is not your seat");
       return;
@@ -238,6 +239,7 @@ io.on("connection", (socket) => {
   });
 
   bindRoomWalking(socket, manager);
+  bindRoomInteractions(socket, manager, io);
 
   socket.on("movePlayer", ({ code, playerId, target }) => {
     wrap(socket, () => {

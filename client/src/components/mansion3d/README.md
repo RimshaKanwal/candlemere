@@ -62,9 +62,11 @@ Rooms opens a collapsible side browser. Camera buttons sit at the scene edge.
 Explore details lists the focused room's interactive props. Objects can also be
 clicked directly, or activated with E when nearby in Walk mode. Drawers animate,
 portraits reveal fictional mansion memories, and the ballroom piano plays a short
-synthesized melody. These local interactions provide atmosphere, never evidence.
+synthesized melody. Portrait inspections provide local atmosphere. Drawer and piano interactions are
+server-authorized and shared with the room; they never reveal evidence.
 Doors open as avatars approach; footsteps vary between hard floors and wood.
-All sounds use the existing sound toggle; transitions respect reduced motion.
+Sound mix provides independent effects, ambience, and music sliders; the existing
+speaker toggle mutes every channel. Transitions respect reduced motion.
 
 Private suggestion results use a sealed-card reveal delivered only to the
 suggester. Public accusation results and the final solution use separate effects.
@@ -72,3 +74,18 @@ Secret passages retain server-authorized travel and add a brief visual transitio
 
 Server checks: `npm test` in `server`. Client navigation/camera checks:
 `npm run test:3d` in `client`.
+
+## Shared props and room atmosphere
+
+Drawer state and piano events use stable room/kind identifiers. Only a detective
+physically inside the room can use them. The server serializes drawer toggles,
+limits repeated requests, and broadcasts accepted events to every player including
+the actor. Snapshots restore drawer state after reconnecting without replaying old
+piano audio. The state is match memory only. Automatic door animation follows the
+same shared avatar positions. Nearby detectives hear the piano with attenuation.
+
+Conservatory rain uses animated glass streaks and filtered noise; the study has a
+pendulum clock and ticking; fireplaces flicker with lounge crackle; the ballroom
+has a quiet periodic melody. Ambient playback waits for a user gesture, pauses
+scheduling in background tabs, and is disposed with the 3D engine. Moving decor
+becomes static under reduced-motion preferences. Volume preferences are local.

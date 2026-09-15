@@ -1,4 +1,4 @@
-import { sfx } from '../../sound';
+import { sfx, createRoomAmbience } from '../../sound';
 import * as THREE from 'three';
 import { buildScenery } from './scenery';
 import { createCamera } from './camera';
@@ -31,6 +31,7 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const cameraRig = createCamera(camera, renderer.domElement, motion);
   const scenery = buildScenery(scene, board);
+  const ambience = createRoomAmbience();
   const avatars = new Map(), roomLabels = [];
   let props = initial, selected = null, disposed = false, elapsed = 0, visibleLabels = true, visiblePlayerNames = true;
   const mapBox = new THREE.Box3(new THREE.Vector3(-board.cols/2-.7,-.7,-board.rows/2-.7),new THREE.Vector3(board.cols/2+.7,3.1,board.rows/2+.7));
@@ -85,6 +86,7 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
     for(const [id,avatar] of avatars){const player=props.players.find(p=>p.id===id);avatar.group.visible=!selected||player?.position.room===selected;}
     marker.visible=false;removeRoute();
     const room=scenery.roomGroups.get(selected);lighting(room);
+    ambience.setRoom(selected);
     cameraRig.frame(room?.box||mapBox,selected?'room':'map',immediate||!!selected);
     if(selected&&!motion.matches)host.animate([{opacity:.35},{opacity:1}],{duration:320,easing:'ease-out'});
     refreshObjects();
@@ -96,11 +98,30 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
   }
   function interact(id) {
     const item=scenery.interactions[id];if(!item||item.room!==selected)return;
-    if(item.kind==='drawer'){item.open=!item.open;sfx.door();}
-    else if(item.kind==='piano'){if(item.playingUntil>elapsed)return;item.playingUntil=elapsed+1.8;sfx.piano();}
-    else sfx.discovery();
+    if(item.kind==='drawer'||item.kind==='piano') {
+      const self=props.players.find(player=>player.id===props.playerId);
+      if(self?.position.room!==item.room){events.discovery?.({title:'Visit this room',text:'Walk into this room to use its objects with your friends.'});return;}
+      events.interact?.({room:item.room,kind:item.kind});return;
+    }
+    sfx.discovery();
     refreshObjects();
     events.discovery?.({title:item.kind==='drawer'?(item.open?'An old invitation':'Drawer closed'):item.kind==='piano'?'The last waltz':'Behind the portrait',text:item.kind==='drawer'&&!item.open?'You slide the drawer gently shut.':item.text});
+  }
+  function receiveInteraction(action, silent=false) {
+    const item=scenery.interactions.find(object=>object.room===action?.room&&object.kind===action.kind);
+    if(!item || action.seq <= (item.actionSeq||0))return;
+    item.actionSeq=action.seq;
+    if(item.kind==='drawer')item.open=!!action.open;
+    if(item.kind==='piano')item.playingUntil=elapsed+(silent?Math.max(0,1.8-(Date.now()-action.time)/1000):1.8);
+    refreshObjects();
+    if(silent)return;
+    const own=avatars.get(props.playerId), point=item.mesh.getWorldPosition(new THREE.Vector3());
+    const self=props.players.find(player=>player.id===props.playerId);
+    const volume=self?.position.room===action.room?1:own?Math.max(0,1-own.group.position.distanceTo(point)/12)*.4:0;
+    if(item.kind==='piano'&&volume>0)sfx.piano(volume);
+    if(item.kind==='drawer'&&volume>0)sfx.door();
+    if(action.playerId===props.playerId)events.discovery?.({title:item.kind==='piano'?'The last waltz':item.open?'An old invitation':'Drawer closed',text:item.kind==='drawer'&&!item.open?'You slide the drawer gently shut.':item.text});
+    else if(selected===action.room)events.activity?.(`${action.playerName} ${item.kind==='piano'?'is playing the piano':item.open?'opened a drawer':'closed a drawer'}.`);
   }
   function receiveWalk(pose) {
     const avatar=avatars.get(pose?.playerId), player=props.players.find(p=>p.id===pose?.playerId);
@@ -139,6 +160,7 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
     }
     if(!props.canMove && draftCell) cancelDraft();
     for(const pose of props.roomWalks || [])receiveWalk(pose);
+    for(const action of props.roomInteractions || [])receiveInteraction(action,true);
     for(const [name,floor] of scenery.roomFloors){
       const reachable=props.canMove&&props.reachableRoomSet.has(name);
       floor.material.emissive.set(reachable?'#b18d3b':'#000000');floor.material.emissiveIntensity=reachable ? .16 : 0;
@@ -341,20 +363,21 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
       if(item.kind==='drawer'){item.mesh.position.z=THREE.MathUtils.lerp(item.mesh.position.z,item.baseZ+(item.open?.38:0),motion.matches?1:1-Math.exp(-dt*9));item.letter.visible=item.open;}
       if(item.kind==='piano')item.mesh.rotation.z=-.16+(item.playingUntil>elapsed&&!motion.matches?Math.sin(elapsed*16)*.015:0);
     }
+    scenery.animate(dt,elapsed,motion.matches);
     cameraRig.update(dt);renderer.render(scene,camera);
     const occupied=[];
     for(const avatar of avatars.values())project(avatar.element,avatar.group.position.clone().add(new THREE.Vector3(0,1.8,0)),avatar.group.visible&&visiblePlayerNames,occupied,true);
     for(const label of roomLabels)project(label.element,label.point,visibleLabels&&!selected,occupied);
   });
   return {
-    sync,receiveWalk,inspect,interact,preview,cancelWalking:cancelDraft,zoom:cameraRig.zoom,rotate:cameraRig.rotate,reset:cameraRig.reset,
+    sync,receiveWalk,receiveInteraction,inspect,interact,preview,cancelWalking:cancelDraft,zoom:cameraRig.zoom,rotate:cameraRig.rotate,reset:cameraRig.reset,
     setView(next) { if(next!=='walk')cancelDraft(); view=next; held.clear(); cameraRig.setView(next, avatars.get(props.playerId)?.group.position); host.focus({preventScroll:true}); },
     input(key, pressed) { if(pressed)held.add(key);else held.delete(key); },
     labels(value){visibleLabels=value;},
     playerNames(value){visiblePlayerNames=value;},
     dispose(){
       host.removeEventListener('keydown',keyDown);host.removeEventListener('keyup',keyUp);host.removeEventListener('blur',clearKeys);window.removeEventListener('blur',clearKeys);
-      disposed=true;renderer.setAnimationLoop(null);observer.disconnect();cameraRig.dispose();
+      disposed=true;ambience.dispose();renderer.setAnimationLoop(null);observer.disconnect();cameraRig.dispose();
       renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.domElement.removeEventListener('pointercancel',cancel);renderer.domElement.removeEventListener('webglcontextlost',lost);
       removeRoute();const geometries=new Set(),materials=new Set();
       scene.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)for(const m of Array.isArray(object.material)?object.material:[object.material])materials.add(m);});
