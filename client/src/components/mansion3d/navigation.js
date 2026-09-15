@@ -45,3 +45,22 @@ export function walkingRoute(board, from, to, players, playerId) {
   }
   return [];
 }
+
+// A keyboard step may cross a room boundary only through its paired doorway.
+export function keyboardDestination(board, from, dr, dc, reachableCells, reachableRooms) {
+  const next = { r: from.r + dr, c: from.c + dc };
+  const tile = board.cells[next.r]?.[next.c];
+  if (tile?.type === 'corridor' && reachableCells.has(`${next.r},${next.c}`)) return { cell: next };
+  if (tile?.type === 'door' && reachableRooms.has(tile.room)) {
+    const room = board.rooms[tile.room];
+    const index = room.doorCells.findIndex(p => p.r === next.r && p.c === next.c);
+    const entry = room.entryCells[index];
+    if (entry?.r === from.r && entry?.c === from.c) return { room: tile.room };
+  }
+  return null;
+}
+
+export function reachableDoorway(board, cell, reachableRooms) {
+  if (!cell) return null;
+  return Object.entries(board.rooms).find(([name, room]) => reachableRooms.has(name) && room.entryCells.some(entry => entry.r === cell.r && entry.c === cell.c))?.[0] || null;
+}

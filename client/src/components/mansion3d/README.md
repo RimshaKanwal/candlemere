@@ -44,8 +44,15 @@ between updates. Positions are held only in memory and included in state
 snapshots for reconnecting viewers; they are discarded on room exit or match end.
 Board moves, cards, and turn state are unaffected.
 
-In corridors, arrows plan reachable squares and Enter confirms the destination.
-Room entry uses the existing Enter button and server-authorized dice movement.
+In corridors, holding arrows or WASD moves the detective itself between legal
+squares while the camera follows. Walk mode has no destination marker. Cross a
+reachable doorway with an arrow key, press Enter beside it, or use its Enter
+button to commit the room move. Enter elsewhere (or Finish in corridor) commits
+the corridor destination and ends movement. Intermediate corridor travel stays
+local until that commitment, preserving the server's one-destination-per-roll rule.
+Rolling enables Walk mode; arriving in a room keeps it active and focuses the
+controls so room walking and suggestions are immediately available. My location
+cancels uncommitted corridor travel.
 Keyboard controls ignore dialogs and text fields and release on loss of focus.
 Mouse-wheel deltas ease into a wider zoom range; right-drag pans in overview.
 Rooms opens a collapsible side browser. Camera buttons sit at the scene edge.

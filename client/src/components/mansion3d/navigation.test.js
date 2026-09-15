@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildBoard } from '../../../../server/src/game/constants.js';
-import { cellPoint, playerPoint, walkingRoute } from './navigation.js';
+import { cellPoint, playerPoint, walkingRoute, keyboardDestination, reachableDoorway } from './navigation.js';
 
 for (const count of [3, 6, 8]) {
   test(`${count} players: corridor route reaches the real room doorway`, () => {
@@ -35,4 +35,24 @@ test('eight avatars sharing a room have distinct positions within its floor', ()
     assert.ok(point.x > c0 - board.cols / 2 && point.x < c1 + 1 - board.cols / 2);
     assert.ok(point.z > r0 - board.rows / 2 && point.z < r1 + 1 - board.rows / 2);
   }
+});
+
+test('keyboard walking enters the Ballroom through a reachable doorway', () => {
+  const board=buildBoard(3), rooms=new Set(['Ballroom']);
+  assert.deepEqual(keyboardDestination(board,{r:7,c:10},-1,0,new Set(),rooms),{room:'Ballroom'});
+  assert.equal(keyboardDestination(board,{r:7,c:10},-1,0,new Set(),new Set()),null);
+  assert.equal(keyboardDestination(board,{r:6,c:9},0,1,new Set(),rooms),null,'cannot enter through the side of a doorway');
+  assert.equal(keyboardDestination(board,{r:7,c:11},-1,0,new Set(),rooms),null,'cannot walk through a wall');
+});
+test('keyboard corridor movement stays within the dice reach', () => {
+  const board=buildBoard(3), cells=new Set(['7,9']);
+  assert.deepEqual(keyboardDestination(board,{r:7,c:8},0,1,cells,new Set()),{cell:{r:7,c:9}});
+  assert.equal(keyboardDestination(board,{r:7,c:9},0,1,cells,new Set()),null);
+});
+
+test('Enter at a doorway chooses a reachable room rather than ending in the corridor', () => {
+  const board=buildBoard(3);
+  assert.equal(reachableDoorway(board,{r:7,c:10},new Set(['Ballroom'])),'Ballroom');
+  assert.equal(reachableDoorway(board,{r:7,c:10},new Set()),null);
+  assert.equal(reachableDoorway(board,{r:7,c:9},new Set(['Ballroom'])),null);
 });
