@@ -153,6 +153,9 @@ export default function Game({ code, playerId, state, onLeave }) {
   const [suggestion, setSuggestion] = useState({ suspect: "", weapon: "" });
   const [accusation, setAccusation] = useState({ suspect: "", weapon: "", room: "" });
   const [lastResult, setLastResult] = useState(null);
+  const [revealOpen, setRevealOpen] = useState(false);
+  const [evidenceUnsealed, setEvidenceUnsealed] = useState(false);
+  const [accusationMoment, setAccusationMoment] = useState(null);
   const [tab, setTab] = useState("notes");
 
   // "Final answer" tension: lock the submit button for a 3-2-1 countdown
@@ -172,7 +175,7 @@ export default function Game({ code, playerId, state, onLeave }) {
 
   useEffect(() => {
     function onSuggestionResult(result) {
-      setLastResult(result);
+      setLastResult(result);setRevealOpen(true);setEvidenceUnsealed(false);
     }
     function onAccusationResult(result) {
       setLastResult({ accusationResult: result });
@@ -314,6 +317,7 @@ export default function Game({ code, playerId, state, onLeave }) {
     if (!acc || acc.seq === seenAccusationSeq.current) return;
     seenAccusationSeq.current = acc.seq;
 
+    setAccusationMoment(acc);
     setZoomRoom(acc.room);
     const zoomTimer = setTimeout(() => setZoomRoom(null), 1700);
     let effectTimer;
@@ -473,6 +477,14 @@ export default function Game({ code, playerId, state, onLeave }) {
 
   return (
     <div className="game-screen">
+      {accusationMoment && !accusationMoment.correct && <aside className="accusation-moment" role="status"><button aria-label="Dismiss accusation result" onClick={()=>setAccusationMoment(null)}>×</button><small>THE ENVELOPE HAS SPOKEN</small><h3>An alibi holds.</h3><p>{accusationMoment.byName}’s accusation was wrong. The investigation continues.</p></aside>}
+      {revealOpen && lastResult && !lastResult.accusationResult && <Modal title="A private revelation" onClose={()=>setRevealOpen(false)}>
+        <div className="evidence-reveal">
+          <p>{lastResult.disprovingPlayerName ? `${lastResult.disprovingPlayerName} slides a card across the table. Only you may see it.` : 'One by one, the table falls silent. Nobody could disprove your suggestion.'}</p>
+          {lastResult.shownCard && (!evidenceUnsealed ? <button className="sealed-evidence" onClick={()=>{setEvidenceUnsealed(true);sfx.show();}}>✉<span>Unseal your evidence</span></button> : <div className="revealed-evidence"><PlayingCard card={lastResult.shownCard}/><p>This card rules out one part of your theory.</p></div>)}
+          <button className="primary" onClick={()=>setRevealOpen(false)}>Return to the investigation</button>
+        </div>
+      </Modal>}
       {briefingOpen && <CaseBriefing onClose={closeBriefing} />}
       {showNag && (
         <div className="nag-toast">
@@ -1008,7 +1020,7 @@ function FinishedScreen({ code, playerId, state, onLeave }) {
 
   return (
     <div className="card finished-card">
-      <h2>🔍 Case Closed</h2>
+      <div className="case-finale"><small>THE MANSION REVEALS ITS SECRET</small><h2>{state.winnerId ? 'Case closed.' : 'The culprit slips away.'}</h2><p>Dawn breaks. At last, the truth.</p></div>
       {state.winnerId ? (
         <p className="finished-winner">
           🏆 <strong>{state.players.find((p) => p.id === state.winnerId)?.name}</strong> cracked the case!
@@ -1017,10 +1029,9 @@ function FinishedScreen({ code, playerId, state, onLeave }) {
         <p>Everyone accused wrongly — the culprit got away.</p>
       )}
       {state.solution && (
-        <p className="finished-solution">
-          It was <strong>{state.solution.suspect}</strong> with the <strong>{state.solution.weapon}</strong> in the{" "}
-          <strong>{state.solution.room}</strong>.
-        </p>
+        <div className="finale-evidence" aria-label="The solution">
+          {['suspect','weapon','room'].map((type,index)=><div key={type} style={{animationDelay:`${index*.3}s`}}><small>{type === 'suspect' ? 'WHO' : type === 'weapon' ? 'WITH WHAT' : 'WHERE'}</small><PlayingCard card={{type,value:state.solution[type]}}/></div>)}
+        </div>
       )}
       <GameLog log={state.log} />
       <NotesReveal finalNotes={state.finalNotes || {}} players={orderedPlayers} cardSets={state.cardSets} />

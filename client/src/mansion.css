@@ -199,3 +199,24 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
   .app-shell.in-game { height:auto; min-height:100dvh; overflow:visible; }
   .in-game .game-screen { height:calc(100dvh - 95px); min-height:650px; }
 }
+
+.evidence-reveal { text-align:center; padding:12px; }
+.evidence-reveal > p { line-height:1.65; }
+.sealed-evidence { display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center; margin:20px auto; width:190px; height:170px; background:#d8c18a; border:2px solid #a38750; border-radius:8px; color:#23372a; font-size:64px; cursor:pointer; }
+.sealed-evidence span { font:14px system-ui; }
+.revealed-evidence { animation:evidence-arrives .55s both; margin:22px; }
+.revealed-evidence .play-card { margin:auto; width:130px; height:170px; }
+.revealed-evidence .play-card-icon { width:96px; height:110px; }
+.accusation-moment { position:fixed; z-index:100; bottom:24px; left:50%; transform:translateX(-50%); width:min(430px,90vw); box-sizing:border-box; padding:22px; border:1px solid #bd9762; border-radius:9px; background:#28251ef5; color:#eee0bc; box-shadow:0 12px 40px #0008; }
+.accusation-moment button { float:right; border:0; background:none; color:#eee0bc; font-size:24px; cursor:pointer; }
+.accusation-moment small,.case-finale small { letter-spacing:2px; font-size:10px; color:#d0b477; }
+.accusation-moment h3 { font:30px Georgia; margin:12px 0; }
+.case-finale { text-align:center; padding:38px 20px; border-radius:8px; background:linear-gradient(#0b171570,#0b1715ed),url('/art/mansion-night.jpg') center 45%/cover; }
+.case-finale h2 { font:clamp(36px,6vw,64px) Georgia; color:#f0dfb7; margin:14px 0; }
+.finale-evidence { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin:26px 0; }
+.finale-evidence > div { text-align:center; animation:evidence-arrives .7s both; }
+.finale-evidence small { display:block; letter-spacing:2px; margin-bottom:9px; color:#c6b37b; }
+.finale-evidence .play-card { width:120px; height:155px; }
+.finale-evidence .play-card-icon { width:90px; height:96px; }
+@keyframes evidence-arrives { from {opacity:0;transform:translateY(15px) rotateY(35deg)} to {opacity:1;transform:none} }
+@media(prefers-reduced-motion:reduce) { .revealed-evidence,.finale-evidence > div {animation:none;} }
