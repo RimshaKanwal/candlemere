@@ -1,3 +1,4 @@
+import { sfx } from '../../sound';
 import * as THREE from 'three';
 import { buildScenery } from './scenery';
 import { createCamera } from './camera';
@@ -31,11 +32,12 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
   const cameraRig = createCamera(camera, renderer.domElement, motion);
   const scenery = buildScenery(scene, board);
   const avatars = new Map(), roomLabels = [];
-  let props = initial, selected = null, disposed = false, elapsed = 0, visibleLabels = true;
+  let props = initial, selected = null, disposed = false, elapsed = 0, visibleLabels = true, visiblePlayerNames = true;
   const mapBox = new THREE.Box3(new THREE.Vector3(-board.cols/2-.7,-.7,-board.rows/2-.7),new THREE.Vector3(board.cols/2+.7,3.1,board.rows/2+.7));
   const marker = new THREE.Mesh(new THREE.TorusGeometry(.38,.035,8,32),new THREE.MeshBasicMaterial({color:'#f4d78d',depthTest:false}));
   marker.rotation.x=-Math.PI/2;marker.visible=false;marker.renderOrder=3;scene.add(marker);
-  let routeLine = null, pending = null, view = 'orbit';
+  let routeLine = null, pending = null, view = 'orbit', lastWalkSend = 0, lastStep = 0;
+  let lastSentPoint = null;
   const held = new Set();
   host.tabIndex = 0;
   host.setAttribute('aria-label', 'Mansion controls. Arrow keys or WASD to walk in character view.');
@@ -85,8 +87,31 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
     const room=scenery.roomGroups.get(selected);lighting(room);
     cameraRig.frame(room?.box||mapBox,selected?'room':'map',immediate||!!selected);
     if(selected&&!motion.matches)host.animate([{opacity:.35},{opacity:1}],{duration:320,easing:'ease-out'});
+    refreshObjects();
     preview(pending);
     if (view !== 'orbit') cameraRig.setView(view, avatars.get(props.playerId)?.group.position);
+  }
+  function refreshObjects() {
+    events.objects?.(scenery.interactions.map((item,id)=>({id,room:item.room,label:item.kind==='drawer'&&item.open?'Close drawer':item.label})).filter(item=>item.room===selected));
+  }
+  function interact(id) {
+    const item=scenery.interactions[id];if(!item||item.room!==selected)return;
+    if(item.kind==='drawer'){item.open=!item.open;sfx.door();}
+    else if(item.kind==='piano'){if(item.playingUntil>elapsed)return;item.playingUntil=elapsed+1.8;sfx.piano();}
+    else sfx.discovery();
+    refreshObjects();
+    events.discovery?.({title:item.kind==='drawer'?(item.open?'An old invitation':'Drawer closed'):item.kind==='piano'?'The last waltz':'Behind the portrait',text:item.kind==='drawer'&&!item.open?'You slide the drawer gently shut.':item.text});
+  }
+  function receiveWalk(pose) {
+    const avatar=avatars.get(pose?.playerId), player=props.players.find(p=>p.id===pose?.playerId);
+    if(!avatar || player?.position.room!==pose.room || ![pose.x,pose.z,pose.yaw].every(Number.isFinite) || pose.time <= (avatar.poseTime||0))return;
+    avatar.poseTime=pose.time;
+    if(pose.playerId===props.playerId) {
+      if(!avatar.localWalked)avatar.group.position.set(pose.x,.15,pose.z);
+    }else avatar.remotePose=pose;
+  }
+  function turn(avatar, yaw, dt) {
+    avatar.body.rotation.y += Math.atan2(Math.sin(yaw-avatar.body.rotation.y),Math.cos(yaw-avatar.body.rotation.y)) * (motion.matches ? 1 : 1-Math.exp(-dt*15));
   }
   function sync(next) {
     props=next;
@@ -97,6 +122,8 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
       const changed=JSON.stringify(avatar.lastPosition)!==JSON.stringify(player.position);
       if(!avatar.lastPosition)avatar.group.position.set(destination.x,.15,destination.z);
       else if(changed){
+        avatar.remotePose=null;avatar.poseTime=0;avatar.localWalked=false;
+        if(player.id===props.playerId && avatar.lastPosition.room && board.rooms[avatar.lastPosition.room]?.secretPassage===player.position.room){sfx.passage();events.passage?.(player.position.room);}
         const path=walkingRoute(board,avatar.lastPosition,player.position,props.players,player.id);
         if(motion.matches||!path.length){
           avatar.group.position.set(destination.x,.15,destination.z);avatar.route=[];
@@ -109,6 +136,7 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
       avatar.group.visible=!selected||player.position.room===selected;
       avatar.group.scale.setScalar(player.eliminated ? .8 : 1);
     }
+    for(const pose of props.roomWalks || [])receiveWalk(pose);
     for(const [name,floor] of scenery.roomFloors){
       const reachable=props.canMove&&props.reachableRoomSet.has(name);
       floor.material.emissive.set(reachable?'#b18d3b':'#000000');floor.material.emissiveIntensity=reachable ? .16 : 0;
@@ -136,6 +164,8 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
     const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
     raycaster.setFromCamera(pointer,camera);
     const targets=selected?[scenery.roomFloors.get(selected)]:scenery.floorTargets;
+    const objectHit=selected?raycaster.intersectObjects(scenery.interactions.filter(item=>item.room===selected).map(item=>item.mesh),true)[0]:null;
+    if(objectHit){const id=scenery.interactions.findIndex(item=>item.mesh===objectHit.object||item.mesh===objectHit.object.parent);if(id>=0)return {interaction:id};}
     return raycaster.intersectObjects(targets,false)[0]?.object.userData.target;
   }
   function pointerDown(event){pointers.add(event.pointerId);if(pointers.size>1)multi=true;down={x:event.clientX,y:event.clientY};}
@@ -145,7 +175,8 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
     if(!down||Math.hypot(event.clientX-down.x,event.clientY-down.y)>6){down=null;return;}
     down=null;const target=hit(event);if(!target)return;
     // Inspection is never a movement command. Movement requires the action button.
-    if(target.room&&!selected)events.inspect(target.room);
+    if(target.interaction!=null)interact(target.interaction);
+    else if(target.room&&!selected)events.inspect(target.room);
     else if(!selected&&target.cell&&props.canMove&&props.reachableCellSet.has(`${target.cell.r},${target.cell.c}`)){preview(target);events.chooseCell(target.cell);}
   }
   const cancel=()=>{down=null;multi=false;pointers.clear();};
@@ -159,6 +190,11 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
     if (event.target.closest('input,textarea,select,dialog') || document.querySelector('dialog[open]')) return;
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     if (view !== 'walk') return;
+    if(key==='e') {
+      const own=avatars.get(props.playerId);if(!own)return;
+      const nearby=scenery.interactions.map((item,id)=>({item,id,distance:item.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(own.group.position)})).filter(({item,distance})=>item.room===selected&&distance<2.7).sort((a,b)=>a.distance-b.distance)[0];
+      if(nearby&&!event.repeat){event.preventDefault();interact(nearby.id);}return;
+    }
     if (key === 'Enter' && pending?.cell && props.canMove && props.reachableCellSet.has(`${pending.cell.r},${pending.cell.c}`)) {
       event.preventDefault(); props.onMoveCell(pending.cell.r,pending.cell.c); preview(null); return;
     }
@@ -204,19 +240,22 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
       }
       if(!blocked)avatar.group.position.copy(next);
     }
-    avatar.body.rotation.y=Math.atan2(delta.x,delta.z);
+    turn(avatar,Math.atan2(delta.x,delta.z),dt);
+    avatar.localWalked=true;
     avatar.legs.forEach((leg,i)=>{leg.rotation.x=motion.matches?0:Math.sin(elapsed*14+i*Math.PI)*.35;});
     return true;
   }
   const clock=new THREE.Clock();
-  function project(element,point,visible,rectangles){
+  function project(element,point,visible,rectangles,stack=false){
     if(!visible){element.hidden=true;return;}
     const p=point.clone().project(camera),w=host.clientWidth,h=host.clientHeight;
-    const x=(p.x*.5+.5)*w,y=(-p.y*.5+.5)*h;
+    const x=(p.x*.5+.5)*w; let y=(-p.y*.5+.5)*h;
     const width=element.offsetWidth||120,height=element.offsetHeight||34;
     const rect={left:x-width/2,right:x+width/2,top:y-height,bottom:y};
+    const collides=()=>rectangles.some(r=>rect.left<r.right+5&&rect.right>r.left-5&&rect.top<r.bottom+4&&rect.bottom>r.top-4);
+    if(stack)for(let attempt=0;attempt<8&&collides();attempt++) { y-=height+5;rect.top-=height+5;rect.bottom-=height+5; }
     const onScreen=p.z>-1&&p.z<1&&rect.left>4&&rect.right<w-4&&rect.top>6&&rect.bottom<h-58;
-    const overlaps=rectangles.some(r=>rect.left<r.right+5&&rect.right>r.left-5&&rect.top<r.bottom+4&&rect.bottom>r.top-4);
+    const overlaps=collides();
     element.hidden=!onScreen||overlaps;
     if(!element.hidden){element.style.transform=`translate(${x}px,${y}px) translate(-50%,-100%)`;rectangles.push(rect);}
   }
@@ -228,24 +267,49 @@ export function createMansionEngine(host, labelLayer, board, initial, events) {
       if(avatar.route.length){
         const goal=avatar.route[0],delta=goal.clone().sub(avatar.group.position);delta.y=0;
         if(delta.length()<dt*5){avatar.group.position.copy(goal);avatar.route.shift();if(!avatar.route.length&&id===props.playerId){const room=props.players.find(p=>p.id===id)?.position.room;if(room)events.arrived(room);}}
-        else{avatar.group.position.addScaledVector(delta.normalize(),dt*5);avatar.body.rotation.y=Math.atan2(delta.x,delta.z);}
+        else{avatar.group.position.addScaledVector(delta.normalize(),dt*5);turn(avatar,Math.atan2(delta.x,delta.z),dt);}
         avatar.body.position.y=motion.matches?0:Math.abs(Math.sin(elapsed*14))*.035;
         avatar.legs.forEach((leg,i)=>{leg.rotation.x=motion.matches?0:Math.sin(elapsed*14+(i%2)*Math.PI)*.3;});
+      }else if(avatar.remotePose && id!==props.playerId){
+        const pose=avatar.remotePose, target=new THREE.Vector3(pose.x,.15,pose.z), distance=avatar.group.position.distanceTo(target);
+        avatar.group.position.lerp(target,motion.matches?1:1-Math.exp(-dt*18));turn(avatar,pose.yaw,dt);
+        avatar.legs.forEach((leg,i)=>{leg.rotation.x=distance>.025&&!motion.matches?Math.sin(elapsed*14+i*Math.PI)*.3:0;});
       }else{avatar.body.position.y=0;avatar.legs.forEach(leg=>{leg.rotation.x=0;});}
     }
     walk(dt);
     const ownAvatar=avatars.get(props.playerId);
-    if(ownAvatar)cameraRig.follow(ownAvatar.group.position);
+    if(ownAvatar) {
+      cameraRig.follow(ownAvatar.group.position);
+      const position=ownAvatar.group.position, self=props.players.find(p=>p.id===props.playerId);
+      if(self?.position.room && !ownAvatar.route.length && ownAvatar.localWalked && elapsed-lastWalkSend>.08 && (elapsed-lastWalkSend>1||!lastSentPoint||lastSentPoint.distanceTo(position)>.008)) {
+        events.walk?.({room:self.position.room,x:position.x,z:position.z,yaw:ownAvatar.body.rotation.y});
+        lastWalkSend=elapsed;lastSentPoint=position.clone();
+      }
+      const moved=ownAvatar.previousFrame && position.distanceTo(ownAvatar.previousFrame)>.003;
+      if(moved && elapsed-lastStep>.32) {sfx.footstep(self?.position.room);lastStep=elapsed;}
+      ownAvatar.previousFrame=position.clone();
+    }
+    for(const door of scenery.doors) {
+      const point=door.hinge.getWorldPosition(new THREE.Vector3());
+      const nearby=[...avatars.values()].some(avatar=>avatar.group.position.distanceTo(point)<2.4);
+      if(nearby && !door.wasNear && selected===door.room)sfx.door();door.wasNear=nearby;
+      door.hinge.rotation.y=THREE.MathUtils.lerp(door.hinge.rotation.y,nearby?-1.65:0,motion.matches?1:1-Math.exp(-dt*6));
+    }
+    for(const item of scenery.interactions) {
+      if(item.kind==='drawer'){item.mesh.position.z=THREE.MathUtils.lerp(item.mesh.position.z,item.baseZ+(item.open?.38:0),motion.matches?1:1-Math.exp(-dt*9));item.letter.visible=item.open;}
+      if(item.kind==='piano')item.mesh.rotation.z=-.16+(item.playingUntil>elapsed&&!motion.matches?Math.sin(elapsed*16)*.015:0);
+    }
     cameraRig.update(dt);renderer.render(scene,camera);
     const occupied=[];
-    for(const [id,avatar] of avatars)project(avatar.element,avatar.group.position.clone().add(new THREE.Vector3(0,1.8,0)),avatar.group.visible&&(!!selected||id===props.playerId),occupied);
+    for(const avatar of avatars.values())project(avatar.element,avatar.group.position.clone().add(new THREE.Vector3(0,1.8,0)),avatar.group.visible&&visiblePlayerNames,occupied,true);
     for(const label of roomLabels)project(label.element,label.point,visibleLabels&&!selected,occupied);
   });
   return {
-    sync,inspect,preview,zoom:cameraRig.zoom,rotate:cameraRig.rotate,reset:cameraRig.reset,
+    sync,receiveWalk,inspect,interact,preview,zoom:cameraRig.zoom,rotate:cameraRig.rotate,reset:cameraRig.reset,
     setView(next) { view=next; held.clear(); cameraRig.setView(next, avatars.get(props.playerId)?.group.position); host.focus({preventScroll:true}); },
     input(key, pressed) { if(pressed)held.add(key);else held.delete(key); },
     labels(value){visibleLabels=value;},
+    playerNames(value){visiblePlayerNames=value;},
     dispose(){
       host.removeEventListener('keydown',keyDown);host.removeEventListener('keyup',keyUp);host.removeEventListener('blur',clearKeys);window.removeEventListener('blur',clearKeys);
       disposed=true;renderer.setAnimationLoop(null);observer.disconnect();cameraRig.dispose();

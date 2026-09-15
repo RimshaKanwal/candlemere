@@ -58,6 +58,16 @@ function playClip(src, volume = 0.6) {
 }
 
 export const sfx = {
+  footstep(room) {
+    if (!enabled) return;
+    const stone = ['Kitchen','Hall','Conservatory','Cellar'].includes(room);
+    noise(0, stone ? .035 : .065, .012);
+    beep(stone ? 180 : 85, 0, .07, { gain: .018 });
+  },
+  door() { if (enabled) { noise(0,.2,.016); beep(110,.1,.16,{gain:.025}); } },
+  passage() { if (enabled) [180,135,90].forEach((f,i)=>beep(f,i*.15,.35,{gain:.025})); },
+  piano() { if (enabled) [261.63,311.13,392,523.25,466.16,392].forEach((f,i)=>beep(f,i*.19,.65,{gain:.045,type:'triangle'})); },
+  discovery() { if (enabled) { beep(523,0,.25,{gain:.035});beep(784,.15,.45,{gain:.035}); } },
   dice() {
     if (!enabled) return;
     noise(0, 0.12, 0.05);

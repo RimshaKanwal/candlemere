@@ -23,7 +23,7 @@ export const characterColor = name => COLORS[Math.max(0, NAMES.indexOf(name))];
 export function buildScenery(scene, board) {
   const kit = createMaterials();
   const geometries = new Map(), extraMaterials = new Set(), textures = new Set();
-  const roomGroups = new Map(), roomFloors = new Map(), tiles = new Map(), floorTargets = [], anchors = [];
+  const roomGroups = new Map(), roomFloors = new Map(), tiles = new Map(), floorTargets = [], anchors = [], interactions = [], doors = [];
   const estate = new THREE.Group(); scene.add(estate);
   const gold = '#c6a160', wood = '#85613f', darkWood = '#554030';
   function shape(parent, kind, size, mat, x, y, z) {
@@ -96,6 +96,8 @@ export function buildScenery(scene, board) {
     texture.repeat.set(.25,.5);texture.offset.set((index%4)/4,index<4?.5:0);textures.add(texture);
     const mat=new THREE.MeshStandardMaterial({map:texture,roughness:1});extraMaterials.add(mat);
     const plane=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);plane.position.set(x,y,z+.09);g.add(plane);
+    plane.userData.target={interaction:'portrait'};
+    interactions.push({kind:'portrait',room:g.userData.room,mesh:plane,label:'Inspect portrait',text:'The varnish is cracked around the eyes. On the frame: “Appearances are an excellent alibi.” An old family joke, perhaps.'});
   }
   function windowFrame(g,x,z,w=1.1,h=1.45) {
     const y=1.82;
@@ -155,7 +157,7 @@ export function buildScenery(scene, board) {
   for(const [index,[name,room]] of Object.entries(board.rooms).entries()) {
     const {r0,r1,c0,c1}=room.rect,w=c1-c0+1,d=r1-r0+1;
     const x=(c0+c1+1)/2-board.cols/2,z=(r0+r1+1)/2-board.rows/2;
-    const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
+    const group=new THREE.Group();group.position.set(x,0,z);group.userData.room=name;scene.add(group);
     const color=ROOM_STORIES[name][2];
     const floor=box(group,0,.045,0,w,.2,d,name==='Hall'||name==='Kitchen'?'#c0c5af':'#c0a378',name==='Hall'||name==='Kitchen'?'marble':'parquet');
     floor.material=floor.material.clone();extraMaterials.add(floor.material);floor.userData.target={room:name};floorTargets.push(floor);roomFloors.set(name,floor);
@@ -180,6 +182,10 @@ export function buildScenery(scene, board) {
         for(const side of [-1,1])box(root,side*.43,1.02,0,.13,1.83,.24,darkWood,'wood');
         box(root,0,1.97,0,1,.15,.27,gold,'metal');
         if(tall)box(root,0,2.48,0,1,.82,.16,color,'wallpaper');
+        const hinge=new THREE.Group();hinge.position.set(-.35,.16,0);root.add(hinge);
+        const leaf=box(hinge,.35,.81,0,.7,1.62,.07,darkWood,'wood');leaf.userData.target={door:true};
+        const knob=orb(hinge,.6,.8,.075,.045,gold,'metal');knob.userData.target={door:true};
+        hinge.rotation.y=-1.45;doors.push({room:name,hinge,openUntil:0});
       }
     }
     for(let c=c0;c<=c1;c++){
@@ -262,6 +268,8 @@ export function buildScenery(scene, board) {
       for(const dx of [-.5,.5])cyl(piano,dx,.48,.35,.055,.035,.86,'#222b25');cyl(piano,0,.48,-.7,.055,.035,.86,'#222b25');
       box(piano,0,1,.66,1.25,.07,.25,'#ddd2b5');for(let i=0;i<15;i++)box(piano,-.55+i*.075,1.05,.6,.037,.045,.13,'#222921');
       const lid=box(piano,0,1.17,-.13,1.3,.06,1.4,'#242d26','plain',true);lid.rotation.z=-.16;
+      lid.userData.target={interaction:'piano'};
+      interactions.push({room:name,kind:'piano',mesh:lid,label:'Play the piano',text:'A minor melody drifts through the ballroom. For a moment, the house feels as though it is listening.',playingUntil:0});
       chair(group,-w/2+1.5,back+1.85,'#303a2f');chandelier(group,.55,-.15,.85);
       sofa(group,w/2-.52,-.6,'#7c6548',1.8,-Math.PI/2);
     }
@@ -286,6 +294,17 @@ export function buildScenery(scene, board) {
     originals.forEach(object=>{object.removeFromParent();if(![...geometries.values()].includes(object.geometry))object.geometry.dispose();});
   }
   batch(estate);for(const {group} of roomGroups.values())batch(group);
+  // Keep moving props out of static geometry batches.
+  for(const [name,{group}] of roomGroups) {
+    const room=board.rooms[name], w=room.rect.c1-room.rect.c0+1, d=room.rect.r1-room.rect.r0+1;
+    const px=w/2-.8,pz=d/2-1.1;
+    box(group,px,.45,pz,1,.6,.65,darkWood,'wood');
+    const drawer=box(group,px,.58,pz+.35,.84,.2,.12,wood,'wood');
+    const handle=box(drawer,0,0,.09,.2,.035,.04,gold,'metal');
+    const letter=box(group,px,.69,pz+.35,.45,.01,.3,'#eadbb1');letter.visible=false;
+    drawer.userData.target={interaction:'drawer'};handle.userData.target={interaction:'drawer'};
+    interactions.push({room:name,kind:'drawer',mesh:drawer,letter,baseZ:drawer.position.z,open:false,label:'Open drawer',text:ROOM_STORIES[name][1]+' Inside: an old dinner invitation, dated long before this case. The house keeps its memories.'});
+  }
   function avatar(player){
     const group=new THREE.Group(),body=new THREE.Group();scene.add(group);group.add(body);
     const index=Math.max(0,NAMES.indexOf(player.character)),color=characterColor(player.character),limbs=[];
@@ -310,6 +329,6 @@ export function buildScenery(scene, board) {
     const halo=ring(group,0,.2,0,.36,.027,gold);halo.rotation.x=-Math.PI/2;
     return {group,body,legs:limbs,ring:halo,route:[],lastPosition:null};
   }
-  return {estate,roomGroups,roomFloors,tiles,floorTargets,anchors,avatar,material:kit.material,
+  return {estate,roomGroups,roomFloors,tiles,floorTargets,anchors,interactions,doors,avatar,material:kit.material,
     dispose(){geometries.forEach(g=>g.dispose());extraMaterials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());kit.dispose();}};
 }

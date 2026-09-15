@@ -124,3 +124,18 @@
   .explorer-actionbar p { max-width:185px; }
   .explorer-move { max-width:145px; }
 }
+
+.room-interactions { position:absolute; left:14px; top:66px; z-index:5; max-width:220px; border:1px solid #bcaa7155; background:#11251eef; border-radius:7px; padding:10px; font:12px system-ui; }
+.room-interactions summary { cursor:pointer; color:#eed5a0; }
+.room-interactions button { display:block; width:100%; margin:7px 0; padding:9px; text-align:left; border:1px solid #82977766; background:#293d2b; color:#eee3c7; border-radius:4px; cursor:pointer; }
+.room-interactions small { color:#a6bba9; }
+.discovery-card { position:absolute; z-index:7; left:14px; bottom:72px; width:min(320px,calc(100% - 100px)); box-sizing:border-box; background:#efe2c2; color:#25372e; padding:18px; border:1px solid #d3b775; border-radius:8px; box-shadow:0 8px 32px #0007; }
+.discovery-card > button { float:right; border:0; background:none; font-size:24px; color:#25372e; cursor:pointer; }
+.discovery-card small { font:9px system-ui; letter-spacing:1px; }
+.discovery-card h4 { font:23px Georgia; margin:10px 0; }
+.discovery-card p { font:14px/1.6 system-ui; margin:0; }
+.passage-reveal { position:absolute; inset:0; z-index:9; display:flex; flex-direction:column; justify-content:center; align-items:center; background:radial-gradient(ellipse,#23372aec,#050b09); pointer-events:none; animation:passage-fade 1.8s both; }
+.passage-reveal span { font:11px system-ui; letter-spacing:3px; text-transform:uppercase; color:#c8b17c; }
+.passage-reveal strong { font:clamp(24px,4vw,40px) Georgia; margin:18px; }
+@keyframes passage-fade { 0%,100%{opacity:0} 20%,70%{opacity:1} }
+@media(prefers-reduced-motion:reduce) { .passage-reveal { animation:none; } }

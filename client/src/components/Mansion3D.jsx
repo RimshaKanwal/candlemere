@@ -1,3 +1,4 @@
+import { socket } from '../socket';
 import { useEffect, useRef, useState } from 'react';
 import { createMansionEngine } from './mansion3d/engine';
 import { ROOM_STORIES } from './mansion3d/scenery';
@@ -14,6 +15,10 @@ export default function Mansion3D(props) {
   const [view, setView] = useState('orbit');
   const [roomsOpen, setRoomsOpen] = useState(false);
   const [labels, setLabels] = useState(true);
+  const [playerNames, setPlayerNames] = useState(true);
+  const [objects, setObjects] = useState([]);
+  const [discovery, setDiscovery] = useState(null);
+  const [passage, setPassage] = useState(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [travelling, setTravelling] = useState(false);
@@ -29,7 +34,7 @@ export default function Mansion3D(props) {
 
   function inspect(name) {
     if (view === 'walk' && name !== self?.position.room) { setView('orbit'); engine.current?.setView('orbit'); }
-    setSelected(name); setCell(null);
+    setSelected(name); setCell(null);setDiscovery(null);
     engine.current?.inspect(name);
     engine.current?.preview(null);
   }
@@ -46,6 +51,10 @@ export default function Mansion3D(props) {
         arrived: name => actions.current.arrived(name),
         chooseCell: next => actions.current.chooseCell(next),
         failed: () => actions.current.failed(),
+        objects: setObjects,
+        discovery: setDiscovery,
+        passage: setPassage,
+        walk: pose => socket.volatile.emit('roomWalk', { ...pose, code: latest.current.code, playerId: latest.current.playerId }),
       });
       setReady(true);
     } catch (error) {
@@ -57,9 +66,14 @@ export default function Mansion3D(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardKey]);
   useEffect(() => {
+    const receive = pose => engine.current?.receiveWalk(pose);
+    socket.on('roomWalk', receive);
+    return () => socket.off('roomWalk', receive);
+  }, []);
+  useEffect(() => {
     engine.current?.sync(latest.current);
     if (!canMove) { setCell(null); engine.current?.preview(null); }
-  }, [players, playerId, currentPlayerId, canMove, reachableCellSet, reachableRoomSet]);
+  }, [players, playerId, currentPlayerId, canMove, reachableCellSet, reachableRoomSet, props.roomWalks]);
   useEffect(() => {
     if (!expanded) return;
     const previousFocus = document.activeElement;
@@ -91,6 +105,10 @@ export default function Mansion3D(props) {
     return () => clearTimeout(timer);
   }, [travelling]);
 
+  useEffect(() => {
+    if(!passage)return;
+    const timer=setTimeout(()=>setPassage(null),1800);return()=>clearTimeout(timer);
+  }, [passage]);
   function move() {
     if (canEnter) {
       const destination = selected;
@@ -138,6 +156,9 @@ export default function Mansion3D(props) {
       </header>
 
       <div className="explorer-viewport">
+        {passage && <div className="passage-reveal" role="status"><span>A hidden door opens</span><strong>Through the shadows…</strong><p>Emerging in the {passage}</p></div>}
+        {selected && objects.length>0 && <details className="room-interactions" key={selected}><summary>Explore details · {objects.length}</summary><div>{objects.map(object=><button key={object.id} onClick={()=>engine.current?.interact(object.id)}>{object.label}</button>)}</div><small>Or click an object · E when nearby</small></details>}
+        {discovery && <aside className="discovery-card" role="status"><button aria-label="Close discovery" onClick={()=>setDiscovery(null)}>×</button><small>MANSION MEMORY · ATMOSPHERE</small><h4>{discovery.title}</h4><p>{discovery.text}</p></aside>}
         <div className="mansion-3d-canvas" ref={host} />
         <div ref={labelLayer} className="world-labels" aria-label="Rooms and detectives" />
         {!ready && !failed && <div className="scene-loading">Preparing the mansion…</div>}
@@ -150,7 +171,8 @@ export default function Mansion3D(props) {
           <button onClick={() => engine.current?.reset()} className="camera-reset">Reset view</button>
           <button aria-label="Zoom in" onClick={() => engine.current?.zoom(true)}>+</button>
           <button aria-label="Rotate view right" onClick={() => engine.current?.rotate(1)}>↷</button>
-          {!selected && <button aria-pressed={labels} onClick={() => { setLabels(!labels); engine.current?.labels(!labels); }}>Names</button>}
+          <button aria-pressed={playerNames} onClick={() => { setPlayerNames(!playerNames); engine.current?.playerNames(!playerNames); }}>Player names</button>
+          {!selected && <button aria-pressed={labels} onClick={() => { setLabels(!labels); engine.current?.labels(!labels); }}>Room names</button>}
         </div>
       </div>
 

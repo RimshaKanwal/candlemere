@@ -36,13 +36,32 @@ secret passages, camera orbit/zoom, repeated 2D/3D switching, and narrow screens
 Top view looks directly down at the selected room or mansion. 3D view restores
 an angled overview. Walk returns to your detective and follows the character.
 Click the scene to focus controls, then use arrows or WASD; touch users can hold
-the direction buttons. Inside your current room this is local, cosmetic free
-walking with wall bounds and furniture ray checks; it does not consume a turn
-or broadcast room coordinates. Server updates preserve the local position until
-an actual board move occurs. Other players still see your board position.
+the direction buttons. Inside your current room this is free walking with wall bounds and furniture ray
+checks. The browser sends changed poses at up to 12.5 Hz; the server validates
+seat ownership, room bounds, finite coordinates, update frequency, and movement
+speed before relaying them to the other players. Remote avatars interpolate
+between updates. Positions are held only in memory and included in state
+snapshots for reconnecting viewers; they are discarded on room exit or match end.
+Board moves, cards, and turn state are unaffected.
 
 In corridors, arrows plan reachable squares and Enter confirms the destination.
 Room entry uses the existing Enter button and server-authorized dice movement.
 Keyboard controls ignore dialogs and text fields and release on loss of focus.
 Mouse-wheel deltas ease into a wider zoom range; right-drag pans in overview.
 Rooms opens a collapsible side browser. Camera buttons sit at the scene edge.
+
+## Interactive atmosphere
+
+Explore details lists the focused room's interactive props. Objects can also be
+clicked directly, or activated with E when nearby in Walk mode. Drawers animate,
+portraits reveal fictional mansion memories, and the ballroom piano plays a short
+synthesized melody. These local interactions provide atmosphere, never evidence.
+Doors open as avatars approach; footsteps vary between hard floors and wood.
+All sounds use the existing sound toggle; transitions respect reduced motion.
+
+Private suggestion results use a sealed-card reveal delivered only to the
+suggester. Public accusation results and the final solution use separate effects.
+Secret passages retain server-authorized travel and add a brief visual transition.
+
+Server checks: `npm test` in `server`. Client navigation/camera checks:
+`npm run test:3d` in `client`.
