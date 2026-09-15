@@ -88,3 +88,39 @@
 .explorer-gamebar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding:12px 18px; border-top:1px solid #52604b; background:#10241e; }
 .explorer-gamebar > span { flex:1; color:#f2e8ce; font-size:14px; }
 .explorer-gamebar .cb-actions { display:flex; flex-wrap:wrap; gap:8px; }
+
+/* The scene is the primary surface; utility controls sit around its edges. */
+.mansion-3d .explorer-header { padding:8px 12px; gap:8px; }
+.mansion-3d .explorer-location h3 { font-size:22px; }
+.mansion-3d .explorer-kicker { display:none; }
+.explorer-header-actions { flex-wrap:wrap; justify-content:flex-end; }
+.explorer-header button[aria-pressed=true] { background:#ddc48b; color:#17251e; }
+.mansion-3d .explorer-camera { left:auto; right:10px; top:72px; bottom:auto; transform:none; flex-direction:column; }
+.mansion-3d .explorer-actionbar { padding:7px 12px; }
+.mansion-3d .explorer-actionbar strong,.mansion-3d .explorer-actionbar small { display:none; }
+.room-browser[hidden] { display:none; }
+.room-browser { position:absolute; z-index:6; top:60px; left:10px; bottom:65px; width:190px; flex-direction:column; overflow:auto; border:1px solid #a3a16e66; border-radius:8px; box-shadow:0 8px 30px #0008; }
+.room-choice { flex-shrink:0; }
+.walk-pad { position:absolute; z-index:4; bottom:80px; left:16px; display:flex; gap:5px; }
+.walk-pad button { width:42px; height:42px; background:#10251eea; border:1px solid #d2bb7c; color:#f1dbab; border-radius:6px; font-size:23px; touch-action:none; }
+.mansion-3d-canvas:focus-visible { outline:2px solid #d2bb7c; outline-offset:-3px; }
+@media(min-width:901px) {
+  .game-screen:has(.mansion-3d) .players-rail { flex-basis:140px; }
+  .game-screen:has(.mansion-3d) .side-drawer { flex-basis:310px; min-width:0; overflow:hidden; }
+  .game-screen:has(.mansion-3d) .prail-card { padding:10px 7px; }
+  .game-screen:has(.mansion-3d) .prail-avatar { width:35px; height:47px; }
+  .game-screen:has(.mansion-3d) .rail-heading h3 { font-size:22px; }
+  .game-screen:has(.mansion-3d) .mansion-heading h2 { font-size:22px; }
+  .game-screen:has(.mansion-3d) .mansion-heading .eyebrow { display:none; }
+  .game-screen:has(.mansion-3d) .investigation-cue { font-size:12px; }
+}
+@media(max-width:680px) {
+  .mansion-3d .explorer-header { align-items:center; }
+  .explorer-header-actions { gap:3px; }
+  .mansion-3d .explorer-camera { right:6px; top:85px; }
+  .explorer-camera .camera-reset { max-width:62px; white-space:normal; }
+  .explorer-view-caption span { max-width:210px; }
+  .mansion-3d .explorer-actionbar { flex-direction:row; align-items:center; }
+  .explorer-actionbar p { max-width:185px; }
+  .explorer-move { max-width:145px; }
+}

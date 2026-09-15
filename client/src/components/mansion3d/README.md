@@ -30,3 +30,19 @@ The renderer is lazy-loaded so visitors do not download Three.js at sign-in.
 Run `npm run test:3d` and `npm run build` from `client`.
 Browser validation should cover both 6- and 8-player boards, entering a room,
 secret passages, camera orbit/zoom, repeated 2D/3D switching, and narrow screens.
+
+## Character controls
+
+Top view looks directly down at the selected room or mansion. 3D view restores
+an angled overview. Walk returns to your detective and follows the character.
+Click the scene to focus controls, then use arrows or WASD; touch users can hold
+the direction buttons. Inside your current room this is local, cosmetic free
+walking with wall bounds and furniture ray checks; it does not consume a turn
+or broadcast room coordinates. Server updates preserve the local position until
+an actual board move occurs. Other players still see your board position.
+
+In corridors, arrows plan reachable squares and Enter confirms the destination.
+Room entry uses the existing Enter button and server-authorized dice movement.
+Keyboard controls ignore dialogs and text fields and release on loss of focus.
+Mouse-wheel deltas ease into a wider zoom range; right-drag pans in overview.
+Rooms opens a collapsible side browser. Camera buttons sit at the scene edge.

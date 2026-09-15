@@ -11,6 +11,8 @@ export default function Mansion3D(props) {
   const [selected, setSelected] = useState(self?.position.room || null);
   const [cell, setCell] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [view, setView] = useState('orbit');
+  const [roomsOpen, setRoomsOpen] = useState(false);
   const [labels, setLabels] = useState(true);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -26,6 +28,7 @@ export default function Mansion3D(props) {
   const boardKey = JSON.stringify(board);
 
   function inspect(name) {
+    if (view === 'walk' && name !== self?.position.room) { setView('orbit'); engine.current?.setView('orbit'); }
     setSelected(name); setCell(null);
     engine.current?.inspect(name);
     engine.current?.preview(null);
@@ -80,8 +83,8 @@ export default function Mansion3D(props) {
     const browser = section.current?.querySelector('.room-browser');
     const choice = browser?.querySelector('.selected');
     if (!choice) return;
-    browser.scrollTo({ left: choice.offsetLeft - browser.offsetLeft - (browser.clientWidth - choice.clientWidth) / 2, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-  }, [selected, expanded]);
+    browser.scrollTo({ top: choice.offsetTop - browser.offsetTop - (browser.clientHeight - choice.clientHeight) / 2, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }, [selected, expanded, roomsOpen]);
   useEffect(() => {
     if (!travelling) return;
     const timer = setTimeout(() => setTravelling(false), 4500);
@@ -95,6 +98,10 @@ export default function Mansion3D(props) {
     } else if (canWalk) {
       onMoveCell(cell.r, cell.c); setCell(null); engine.current?.preview(null);
     }
+  }
+  function switchView(next) {
+    if (next === 'walk') inspect(self?.position.room || null);
+    setView(next); engine.current?.setView(next);
   }
   function myLocation() {
     const player = latest.current.players.find(p => p.id === latest.current.playerId);
@@ -120,6 +127,10 @@ export default function Mansion3D(props) {
           <h3>{selected || 'The mansion'}{here && <span className="location-pill">You are here</span>}</h3>
         </div>
         <div className="explorer-header-actions">
+          <button aria-pressed={view === 'top'} onClick={() => switchView('top')}>Top view</button>
+          <button aria-pressed={view === 'orbit'} onClick={() => switchView('orbit')}>3D view</button>
+          <button aria-pressed={view === 'walk'} onClick={() => switchView('walk')}>Walk</button>
+          <button aria-expanded={roomsOpen} onClick={() => setRoomsOpen(!roomsOpen)}>Rooms</button>
           {selected && <button onClick={() => inspect(null)} className="map-return">↖ Mansion map</button>}
           <button onClick={myLocation} title="Return to your detective’s location">My location</button>
           <button onClick={() => setExpanded(value => !value)} aria-label={expanded ? 'Exit expanded view' : 'Expand mansion view'} aria-pressed={expanded}>{expanded ? '↙' : '⛶'}</button>
@@ -131,7 +142,7 @@ export default function Mansion3D(props) {
         <div ref={labelLayer} className="world-labels" aria-label="Rooms and detectives" />
         {!ready && !failed && <div className="scene-loading">Preparing the mansion…</div>}
         {failed && <div className="scene-loading"><p>The 3D view is unavailable.</p><button onClick={onFallback}>Continue with the illustrated board</button></div>}
-        <div className="explorer-view-caption">{selected ? 'ROOM VIEW' : 'MANSION MAP'}<span>{selected ? 'Drag gently to look around' : 'Choose a room to look inside'}</span></div>
+        <div className="explorer-view-caption">{view === 'walk' ? 'CHARACTER VIEW' : view === 'top' ? 'TOP VIEW' : selected ? 'ROOM VIEW' : 'MANSION MAP'}<span>{view === 'walk' ? self?.position.room ? 'Arrow keys / WASD to walk · Drag to look' : 'Arrows to plan a route · Enter to move' : 'Scroll to zoom · Drag to orbit · Right-drag to pan'}</span></div>
         {selected && <div className="room-stepper"><button aria-label="Previous room" onClick={() => changeRoom(-1)}>←</button><span>{String(roomNames.indexOf(selected)+1).padStart(2,'0')} / {roomNames.length}</span><button aria-label="Next room" onClick={() => changeRoom(1)}>→</button></div>}
         <div className="explorer-camera" aria-label="Camera controls">
           <button aria-label="Rotate view left" onClick={() => engine.current?.rotate(-1)}>↶</button>
@@ -143,7 +154,7 @@ export default function Mansion3D(props) {
         </div>
       </div>
 
-      <nav className="room-browser" aria-label="Explore rooms">
+      <nav hidden={!roomsOpen} className="room-browser" aria-label="Explore rooms">
         {roomNames.map(name => {
           const index = ART_ORDER.indexOf(name);
           const reachable = canMove && reachableRoomSet.has(name);
@@ -154,6 +165,9 @@ export default function Mansion3D(props) {
           </button>;
         })}
       </nav>
+      {view === 'walk' && self?.position.room && <div className="walk-pad" aria-label="Walking controls">
+        {[['ArrowUp','↑'],['ArrowLeft','←'],['ArrowDown','↓'],['ArrowRight','→']].map(([key,label]) => <button key={key} aria-label={`Walk ${key.slice(5).toLowerCase()}`} onPointerDown={event => {event.currentTarget.setPointerCapture(event.pointerId);engine.current?.input(key,true);}} onPointerUp={() => engine.current?.input(key,false)} onPointerCancel={() => engine.current?.input(key,false)} onLostPointerCapture={() => engine.current?.input(key,false)}>{label}</button>)}
+      </div>}
       <footer className="explorer-actionbar" aria-live="polite">
         <div><strong>{travelling ? 'On your way' : selected || (cell ? 'A new direction' : 'Follow the evidence')}</strong><p>{movementHint}</p>
           {selected && board.rooms[selected]?.secretPassage && <small>Secret passage connects to {board.rooms[selected].secretPassage}</small>}
