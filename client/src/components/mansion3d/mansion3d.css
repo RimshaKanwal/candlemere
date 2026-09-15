@@ -56,7 +56,7 @@
 .mansion-3d.is-expanded { position:fixed; inset:12px; width:auto; height:auto; min-height:0; z-index:90; box-shadow:0 0 0 30px #08110eea; }
 .mansion-3d.is-expanded .explorer-header { padding:18px 26px; }
 .mansion-3d.is-expanded .explorer-location h3 { font-size:35px; }
-.mansion-3d.is-expanded .room-browser { justify-content:center; }
+.mansion-3d.is-expanded .room-browser { justify-content:flex-start; }
 @media(max-width:1250px) { .explorer-header { padding:13px; } .explorer-location h3 { font-size:25px; } .explorer-header-actions { gap:4px; } .explorer-header button { font-size:11px; padding:6px 8px; } .location-pill { display:none; } .explorer-actionbar { padding:12px; } .explorer-actionbar p { max-width:270px; } .explorer-move { padding:9px 12px; max-width:175px; } }
 @media(max-width:680px) {
   .board-stage:has(.mansion-3d) { height:670px; }
@@ -84,3 +84,7 @@
   .mansion-3d.is-expanded .explorer-header { padding:12px; }
 }
 @media(prefers-reduced-motion:reduce) { .room-choice { transition:none; } }
+
+.explorer-gamebar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding:12px 18px; border-top:1px solid #52604b; background:#10241e; }
+.explorer-gamebar > span { flex:1; color:#f2e8ce; font-size:14px; }
+.explorer-gamebar .cb-actions { display:flex; flex-wrap:wrap; gap:8px; }

@@ -29,7 +29,7 @@ export function createCamera(camera, canvas, motion) {
   controls.minPolarAngle = .55;
   controls.maxPolarAngle = 1.0;
   let goal = null, box = new THREE.Box3(), mode = 'map', fitted = 40;
-  const direction = new THREE.Vector3(.8, 1.25, 1.5).normalize();
+  const direction = new THREE.Vector3(.8, 1.45, 1.5).normalize();
   function frame(bounds, nextMode, immediate = false) {
     box.copy(bounds); mode = nextMode;
     const target = bounds.getCenter(new THREE.Vector3());
@@ -46,19 +46,21 @@ export function createCamera(camera, canvas, motion) {
     else goal = { position, target };
   }
   function zoom(closer) {
-    const offset = camera.position.clone().sub(controls.target);
+    const target = goal?.target.clone() || controls.target.clone();
+    const offset = (goal?.position || camera.position).clone().sub(target);
     const distance = THREE.MathUtils.clamp(offset.length() * (closer ? .88 : 1.12), controls.minDistance, controls.maxDistance);
-    const position = offset.normalize().multiplyScalar(distance).add(controls.target);
+    const position = offset.normalize().multiplyScalar(distance).add(target);
     if (motion.matches) { camera.position.copy(position); controls.update(); }
-    else goal = { position, target: controls.target.clone() };
+    else goal = { position, target };
   }
   function rotate(sign) {
-    const offset = camera.position.clone().sub(controls.target);
+    const target = goal?.target.clone() || controls.target.clone();
+    const offset = (goal?.position || camera.position).clone().sub(target);
     const spherical = new THREE.Spherical().setFromVector3(offset);
     spherical.theta = THREE.MathUtils.clamp(spherical.theta + sign * .2, controls.minAzimuthAngle, controls.maxAzimuthAngle);
-    const position = new THREE.Vector3().setFromSpherical(spherical).add(controls.target);
+    const position = new THREE.Vector3().setFromSpherical(spherical).add(target);
     if (motion.matches) { camera.position.copy(position); controls.update(); }
-    else goal = { position, target: controls.target.clone() };
+    else goal = { position, target };
   }
   const cancel = () => { goal = null; };
   controls.addEventListener('start', cancel);

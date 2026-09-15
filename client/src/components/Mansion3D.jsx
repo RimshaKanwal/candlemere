@@ -59,12 +59,29 @@ export default function Mansion3D(props) {
   }, [players, playerId, currentPlayerId, canMove, reachableCellSet, reachableRoomSet]);
   useEffect(() => {
     if (!expanded) return;
+    const previousFocus = document.activeElement;
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const escape = event => { if (event.key === 'Escape' && !document.querySelector('dialog[open]')) setExpanded(false); };
+    section.current?.querySelector('button')?.focus({ preventScroll: true });
+    const escape = event => {
+      if (document.querySelector('dialog[open]')) return;
+      if (event.key === 'Escape') setExpanded(false);
+      if (event.key === 'Tab') {
+        const buttons = [...section.current.querySelectorAll('button:not(:disabled)')].filter(button => button.getClientRects().length && getComputedStyle(button).visibility !== 'hidden');
+        const first = buttons[0], last = buttons.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
     document.addEventListener('keydown', escape);
-    return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', escape); };
+    return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', escape); previousFocus?.focus({ preventScroll: true }); };
   }, [expanded]);
+  useEffect(() => {
+    const browser = section.current?.querySelector('.room-browser');
+    const choice = browser?.querySelector('.selected');
+    if (!choice) return;
+    browser.scrollTo({ left: choice.offsetLeft - browser.offsetLeft - (browser.clientWidth - choice.clientWidth) / 2, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }, [selected, expanded]);
   useEffect(() => {
     if (!travelling) return;
     const timer = setTimeout(() => setTravelling(false), 4500);
@@ -143,6 +160,10 @@ export default function Mansion3D(props) {
         </div>
         <button className="explorer-move" onClick={move} disabled={!(canEnter || canWalk) || travelling}>{canEnter ? `Enter ${selected} →` : canWalk ? 'Walk here →' : here ? 'You are here' : 'Choose a destination'}</button>
       </footer>
+      {expanded && <div className="explorer-gamebar">
+        <span aria-live="polite">{props.gameStatus}</span>
+        <div className="cb-actions">{props.gameActions}<button className="cb-btn" onClick={() => setExpanded(false)}>Evidence & notes ↙</button></div>
+      </div>}
     </section>
   );
 }

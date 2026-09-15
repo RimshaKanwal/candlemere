@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:3d": "node --test src/components/mansion3d/navigation.test.js"
+    "test:3d": "node --test src/components/mansion3d/*.test.js"
   },
   "dependencies": {
     "react": "^19.2.7",

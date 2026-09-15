@@ -433,6 +433,44 @@ export default function Game({ code, playerId, state, onLeave }) {
       : "Your move, detective. Roll the dice to explore."
     : `${currentPlayer?.name} is investigating. A good time to connect your clues.`;
 
+  const turnActions = (<>
+            {myActive && turnState.diceValue == null && !turnState.hasMoved && !pending && (
+              <button className="cb-btn dice" onClick={rollDice}><span className="cb-ico">🎲</span>Roll Dice</button>
+            )}
+            {myActive && !turnState.hasMoved && !pending && passageTo && (
+              <button className="cb-btn passage" onClick={usePassage}><span className="cb-ico">🚪</span>Passage <small>→ {passageTo}</small></button>
+            )}
+            {myActive && !pending && (
+              <button
+                className="cb-btn suggest"
+                onClick={() => setSuggestOpen(true)}
+                disabled={!self.position.room || turnState.hasSuggested}
+                title={turnState.hasSuggested ? "Already suggested this turn" : !self.position.room ? "Be in a room to suggest" : ""}
+              >
+                <span className="cb-ico">🔍</span>Suggest
+              </button>
+            )}
+            {(myActive || canAccuseAnytime) && !pending && (
+              <button
+                className="cb-btn accuse"
+                onClick={() => setAccuseOpen(true)}
+                disabled={!self.position.room}
+                title={
+                  !self.position.room
+                    ? "Be in a room to accuse"
+                    : !myActive && canAccuseAnytime
+                    ? "Anytime-accusation is on for this game — you don't need to wait for your turn"
+                    : ""
+                }
+              >
+                <span className="cb-ico">⚖️</span>Accuse{!myActive && canAccuseAnytime && <small> (anytime)</small>}
+              </button>
+            )}
+            {myActive && !pending && (
+              <button className="cb-btn end" onClick={endTurn}><span className="cb-ico">🏳️</span>End Turn</button>
+            )}
+  </>);
+
   return (
     <div className="game-screen">
       {briefingOpen && <CaseBriefing onClose={closeBriefing} />}
@@ -470,7 +508,7 @@ export default function Game({ code, playerId, state, onLeave }) {
           <button className="briefing-trigger" onClick={() => setBriefingOpen(true)}>Case briefing ↗</button>
         </div>
         <div className="board-stage" ref={tableRef}>
-          {boardView === "3d" ? <Suspense fallback={<div className="scene-loading">Opening the mansion…</div>}><Mansion3D board={board} players={state.players} playerId={playerId} currentPlayerId={state.currentPlayerId} canMove={canMove} reachableCellSet={reachableCellSet} reachableRoomSet={reachableRoomSet} onMoveCell={moveToCell} onMoveRoom={moveToRoom} onFallback={() => setBoardView("2d")} /></Suspense> : <Board
+          {boardView === "3d" ? <Suspense fallback={<div className="scene-loading">Opening the mansion…</div>}><Mansion3D gameActions={turnActions} gameStatus={statusLine} board={board} players={state.players} playerId={playerId} currentPlayerId={state.currentPlayerId} canMove={canMove} reachableCellSet={reachableCellSet} reachableRoomSet={reachableRoomSet} onMoveCell={moveToCell} onMoveRoom={moveToRoom} onFallback={() => setBoardView("2d")} /></Suspense> : <Board
             board={board}
             cell={cell}
             players={state.players}
@@ -493,41 +531,7 @@ export default function Game({ code, playerId, state, onLeave }) {
             <DiceDisplay diceValue={turnState.diceValue} rollerName={currentPlayer?.name} />
           </div>
           <div className="cb-actions">
-            {myActive && turnState.diceValue == null && !turnState.hasMoved && !pending && (
-              <button className="cb-btn dice" onClick={rollDice}><span className="cb-ico">🎲</span>Roll Dice</button>
-            )}
-            {myActive && !turnState.hasMoved && !pending && passageTo && (
-              <button className="cb-btn passage" onClick={usePassage}><span className="cb-ico">🚪</span>Passage <small>→ {passageTo}</small></button>
-            )}
-            {myActive && !pending && (
-              <button
-                className="cb-btn suggest"
-                onClick={() => setSuggestOpen(true)}
-                disabled={!self.position.room || turnState.hasSuggested}
-                title={turnState.hasSuggested ? "Already suggested this turn" : !self.position.room ? "Be in a room to suggest" : ""}
-              >
-                <span className="cb-ico">🔍</span>Suggest
-              </button>
-            )}
-            {(myActive || canAccuseAnytime) && !pending && (
-              <button
-                className="cb-btn accuse"
-                onClick={() => setAccuseOpen(true)}
-                disabled={!self.position.room}
-                title={
-                  !self.position.room
-                    ? "Be in a room to accuse"
-                    : !myActive && canAccuseAnytime
-                    ? "Anytime-accusation is on for this game — you don't need to wait for your turn"
-                    : ""
-                }
-              >
-                <span className="cb-ico">⚖️</span>Accuse{!myActive && canAccuseAnytime && <small> (anytime)</small>}
-              </button>
-            )}
-            {myActive && !pending && (
-              <button className="cb-btn end" onClick={endTurn}><span className="cb-ico">🏳️</span>End Turn</button>
-            )}
+            {turnActions}
             <div className="reaction-menu-wrap">
               <button
                 className="sound-toggle"
