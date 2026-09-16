@@ -84,7 +84,7 @@ the actor. Snapshots restore drawer state after reconnecting without replaying o
 piano audio. The state is match memory only. Automatic door animation follows the
 same shared avatar positions. Nearby detectives hear the piano with attenuation.
 
-Conservatory rain uses animated glass streaks and filtered noise; the study has a
+Glasshouse rain uses animated glass streaks and filtered noise; the bureau has a
 pendulum clock and ticking; fireplaces flicker with lounge crackle; the ballroom
 has a quiet periodic melody. Ambient playback waits for a user gesture, pauses
 scheduling in background tabs, and is disposed with the 3D engine. Moving decor

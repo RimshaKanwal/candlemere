@@ -3,8 +3,54 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "./db.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+// Tokens are only as trustworthy as this key: anyone holding it can mint a
+// valid session for any account. A checked-in fallback would therefore be a
+// master key to every account on a deployed server, so production must supply
+// its own and the process refuses to start without one.
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+if (!process.env.JWT_SECRET && IS_PRODUCTION) {
+  throw new Error(
+    "JWT_SECRET is not set. Refusing to start with a guessable signing key — " +
+      "generate one with: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\""
+  );
+}
+if (!process.env.JWT_SECRET) {
+  console.warn("[auth] JWT_SECRET is not set — falling back to an insecure development key.");
+}
+const JWT_SECRET = process.env.JWT_SECRET || "insecure-development-key";
 const USERNAME_RE = /^[a-zA-Z0-9 _-]{2,20}$/;
+
+// A 4-digit PIN is only 10,000 guesses, so what actually protects an account
+// is the cost of guessing, not the PIN itself. Failures are counted per
+// username and lock that name out for a while once they pile up. This is
+// per-process and in-memory, like the rate limiter — see rateLimit.js.
+const MAX_PIN_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
+const pinFailures = new Map(); // username key -> { count, until }
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of pinFailures) {
+    if (record.until <= now && record.count === 0) pinFailures.delete(key);
+  }
+}, LOCKOUT_MS).unref();
+
+function assertNotLockedOut(key) {
+  const record = pinFailures.get(key);
+  if (!record || record.until <= Date.now()) return;
+  const minutes = Math.ceil((record.until - Date.now()) / 60000);
+  throw new Error(`Too many wrong PINs for that username. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+}
+
+function notePinFailure(key) {
+  const record = pinFailures.get(key) ?? { count: 0, until: 0 };
+  record.count += 1;
+  if (record.count >= MAX_PIN_ATTEMPTS) {
+    record.until = Date.now() + LOCKOUT_MS;
+    record.count = 0; // the lockout replaces the tally until it expires
+  }
+  pinFailures.set(key, record);
+}
 
 function toPublicUser(row) {
   return {
@@ -22,7 +68,7 @@ function toPublicUser(row) {
 }
 
 function issueToken(row) {
-  return jwt.sign({ userId: row.id, username: row.display_name }, JWT_SECRET, { expiresIn: "180d" });
+  return jwt.sign({ userId: row.id, username: row.display_name }, JWT_SECRET, { expiresIn: "30d" });
 }
 
 // Creates the account on first use, or verifies the PIN against an existing
@@ -39,11 +85,17 @@ export async function registerOrLogin(username, pin) {
   }
   const key = trimmedName.toLowerCase();
 
+  assertNotLockedOut(key);
+
   const existing = await pool.query("SELECT * FROM users WHERE username = $1", [key]);
   if (existing.rows.length > 0) {
     const row = existing.rows[0];
     const ok = await bcrypt.compare(trimmedPin, row.pin_hash);
-    if (!ok) throw new Error("Wrong PIN for that username");
+    if (!ok) {
+      notePinFailure(key);
+      throw new Error("Wrong PIN for that username");
+    }
+    pinFailures.delete(key);
     return { token: issueToken(row), user: toPublicUser(row) };
   }
 

@@ -176,7 +176,7 @@ export default function App() {
   return (
     <div className={`app-shell ${state?.status === "playing" ? "in-game" : "at-arrival"}`}>
       <header className="app-header">
-        <div className="brand"><span className="brand-seal">C</span><div><h1>Cluedo<span>ONLINE</span></h1><span className="brand-sub">Everybody has something to hide.</span></div></div>
+        <div className="brand"><span className="brand-seal">C</span><div><h1>Candlemere<span>ONLINE</span></h1><span className="brand-sub">Everybody has something to hide.</span></div></div>
         <div className="header-right">
           {code && <span className="room-code-badge">Room: {code}</span>}
           {account && (

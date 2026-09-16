@@ -43,45 +43,45 @@ function Art({ kind, name, emoji, className }) {
 const REACTIONS = ["😏 Suspicious...", "🤔 Hmm", "😱 No way!", "😂 lol", "🎯 Got you!", "😤 Ugh"];
 
 const SECRET_PASSAGES = {
-  Kitchen: "Study",
-  Study: "Kitchen",
-  Lounge: "Conservatory",
-  Conservatory: "Lounge",
+  Scullery: "Bureau",
+  Bureau: "Scullery",
+  Parlour: "Glasshouse",
+  Glasshouse: "Parlour",
 };
 
 // Per-character identity — a colour + emoji used everywhere that character
 // appears (board token, seat avatar, suspect card) so players are instantly
 // recognisable instead of an ambiguous first initial.
 const CHARACTERS = {
-  "Miss Scarlett": { color: "#c0392b", emoji: "🌹" },
-  "Colonel Mustard": { color: "#c99a1e", emoji: "🎖️" },
-  "Mrs. White": { color: "#8a8f98", emoji: "🤍" },
-  "Reverend Green": { color: "#2e8b57", emoji: "🍀" },
-  "Mrs. Peacock": { color: "#2f6fb0", emoji: "🦚" },
-  "Professor Plum": { color: "#7d4bb5", emoji: "🔮" },
-  "Dr. Orchid": { color: "#d64f9b", emoji: "🌸" },
-  "Monsieur Brunette": { color: "#6d4c3d", emoji: "🕵️" },
+  "Miss Carmine": { color: "#c0392b", emoji: "🌹" },
+  "Brigadier Ochre": { color: "#c99a1e", emoji: "🎖️" },
+  "Dowager Ivory": { color: "#8a8f98", emoji: "🤍" },
+  "Deacon Viridian": { color: "#2e8b57", emoji: "🍀" },
+  "Baroness Indigo": { color: "#2f6fb0", emoji: "🦚" },
+  "Professor Mulberry": { color: "#7d4bb5", emoji: "🔮" },
+  "Doctor Cerise": { color: "#d64f9b", emoji: "🌸" },
+  "Monsieur Sepia": { color: "#6d4c3d", emoji: "🕵️" },
 };
 const charMeta = (name) => CHARACTERS[name] || { color: "#4f6df5", emoji: "❓" };
 
 const ROOM_THEME = {
-  Kitchen: { emoji: "🍳", c: "#b5462f" },
-  Ballroom: { emoji: "🎭", c: "#6d3f9c" },
-  Conservatory: { emoji: "🪴", c: "#2e8b57" },
-  "Dining Room": { emoji: "🍽️", c: "#a9761b" },
-  "Billiard Room": { emoji: "🎱", c: "#1f6b45" },
-  Library: { emoji: "📚", c: "#7b4a1e" },
-  Lounge: { emoji: "🛋️", c: "#b23a48" },
-  Hall: { emoji: "🏛️", c: "#3a5169" },
-  Study: { emoji: "📖", c: "#8a5a2b" },
-  Cellar: { emoji: "🍷", c: "#5a2a6b" },
-  "Trophy Room": { emoji: "🏆", c: "#b08d1e" },
+  Scullery: { emoji: "🍳", c: "#b5462f" },
+  Salon: { emoji: "🎹", c: "#6d3f9c" },
+  Glasshouse: { emoji: "🪴", c: "#2e8b57" },
+  "Supper Room": { emoji: "🍽️", c: "#a9761b" },
+  "Smoking Room": { emoji: "🎱", c: "#1f6b45" },
+  "Reading Room": { emoji: "📚", c: "#7b4a1e" },
+  Parlour: { emoji: "🛋️", c: "#b23a48" },
+  Foyer: { emoji: "🏛️", c: "#3a5169" },
+  Bureau: { emoji: "🖋️", c: "#8a5a2b" },
+  Vaults: { emoji: "🍷", c: "#5a2a6b" },
+  Menagerie: { emoji: "🦌", c: "#b08d1e" },
 };
 const roomTheme = (name) => ROOM_THEME[name] || { emoji: "🚪", c: "#555" };
 
 const WEAPON_EMOJI = {
-  Candlestick: "🕯️", Knife: "🔪", "Lead Pipe": "🪈", Revolver: "🔫",
-  Rope: "🪢", Wrench: "🔧", Poison: "☠️", "Bow and Arrow": "🏹",
+  Candelabra: "🕯️", "Letter Opener": "🔪", "Fire Poker": "🔥", "Duelling Pistol": "🔫",
+  "Silk Cord": "🪢", "Marble Bust": "🗿", Laudanum: "☠️", "Antique Sabre": "🗡️",
 };
 function cardMeta(card) {
   if (card.type === "suspect") return { icon: charMeta(card.value).emoji, color: charMeta(card.value).color };
@@ -719,6 +719,7 @@ function PlayersRail({ players, turnOrder, currentId, selfId, responses, reactio
                 {p.isHost && <span className="host-crown" title="Host">👑</span>}
                 {p.name}
                 {p.id === selfId && <span className="prail-you">you</span>}
+                {p.isBot && <span className="prail-bot" title="Computer detective">cpu</span>}
               </div>
               <div className="prail-meta">{p.character}</div>
               <div className="prail-cards">
@@ -759,7 +760,7 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
   };
 
   // The dead centre (classic games) gets a decorative "case file" crest.
-  const hasCellar = !!board.rooms.Cellar;
+  const hasVaults = !!board.rooms.Vaults;
 
   // A single absolutely-positioned layer so tokens can smoothly slide
   // between squares (and snap to a room's centre) instead of jumping —
@@ -791,10 +792,10 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
   return (
     <div className={`board-wrap ${shaking ? "shaking" : ""}`}>
       <div className={`board-cells ${zooming ? "zooming" : ""}`} style={gridStyle}>
-        {!hasCellar && (
+        {!hasVaults && (
           <div className="board-centerpiece" style={{ gridRow: "11 / 17", gridColumn: "10 / 16" }}>
             <div className="crest-envelope">C</div>
-            <div className="crest-title">CLUEDO</div>
+            <div className="crest-title">CANDLEMERE</div>
             <div className="crest-sub">TRUST NO ONE</div>
           </div>
         )}

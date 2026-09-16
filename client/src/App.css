@@ -433,6 +433,43 @@ button.secondary {
   color: white;
 }
 
+.bot-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  background: #3f6b63;
+  color: #eaf5f1;
+  letter-spacing: 0.5px;
+}
+
+.player-row.is-bot .player-name { opacity: 0.92; }
+.player-row .player-name { flex: 1 1 auto; min-width: 0; }
+
+.bot-remove {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.bot-remove:hover { color: #ff8a80; border-color: #ff8a8055; }
+
+.bot-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.bot-controls .hint { margin: 0; }
+
 /* ── Game screen: players rail | board + controls | side drawer ──────── */
 .game-screen {
   display: flex;

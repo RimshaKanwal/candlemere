@@ -6,7 +6,7 @@ import { createMansionEngine } from './mansion3d/engine';
 import { ROOM_STORIES } from './mansion3d/scenery';
 import './mansion3d/mansion3d.css';
 
-const ART_ORDER = ['Kitchen','Ballroom','Conservatory','Dining Room','Billiard Room','Library','Lounge','Hall','Study','Cellar','Trophy Room'];
+const ART_ORDER = ['Scullery','Salon','Glasshouse','Supper Room','Smoking Room','Reading Room','Parlour','Foyer','Bureau','Vaults','Menagerie'];
 
 export default function Mansion3D(props) {
   const { board, players, playerId, currentPlayerId, canMove, reachableRoomSet, reachableCellSet, onMoveRoom, onMoveCell, onFallback } = props;

@@ -4,19 +4,19 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createMaterials } from './materials';
 
 export const ROOM_STORIES = {
-  Kitchen: ['Below stairs', 'Copper pans, a cooling stove, and a supper interrupted.', '#b99160'],
-  Ballroom: ['The last dance', 'An empty dance floor. A grand piano. A night nobody will forget.', '#b39859'],
-  Conservatory: ['Under glass', 'Moonlit windows and quiet corners hidden among the palms.', '#6e967b'],
-  'Dining Room': ['A table for trouble', 'Dinner is served. One chair will remain empty.', '#994f4b'],
-  'Billiard Room': ['A dangerous game', 'An unfinished game, and a very convenient alibi.', '#438572'],
-  Library: ['Between the lines', 'Every book has a story. So does every guest.', '#a48150'],
-  Lounge: ['After dark', 'Velvet seats, whispered secrets, and the glow of a dying fire.', '#985664'],
-  Hall: ['An unwelcome arrival', 'Every guest passed through here. Who came back?', '#9bad9f'],
-  Study: ['Strictly confidential', 'An open letter. A locked drawer. A motive?', '#788895'],
-  Cellar: ['Down in the dark', 'The finest vintage. The worst place to be alone.', '#88728b'],
-  'Trophy Room': ['For the collection', 'A room full of victories. And one terrible loss.', '#b09457'],
+  Scullery: ['Below stairs', 'Copper pans, a cooling stove, and a supper interrupted.', '#b99160'],
+  Salon: ['The last dance', 'An empty dance floor. A grand piano. A night nobody will forget.', '#b39859'],
+  Glasshouse: ['Under glass', 'Moonlit windows and quiet corners hidden among the palms.', '#6e967b'],
+  'Supper Room': ['A table for trouble', 'Dinner is served. One chair will remain empty.', '#994f4b'],
+  'Smoking Room': ['A dangerous game', 'An unfinished game, and a very convenient alibi.', '#438572'],
+  "Reading Room": ['Between the lines', 'Every book has a story. So does every guest.', '#a48150'],
+  Parlour: ['After dark', 'Velvet seats, whispered secrets, and the glow of a dying fire.', '#985664'],
+  Foyer: ['An unwelcome arrival', 'Every guest passed through here. Who came back?', '#9bad9f'],
+  Bureau: ['Strictly confidential', 'An open letter. A locked drawer. A motive?', '#788895'],
+  Vaults: ['Down in the dark', 'The finest vintage. The worst place to be alone.', '#88728b'],
+  'Menagerie': ['For the collection', 'A room full of victories. And one terrible loss.', '#b09457'],
 };
-const NAMES = ['Miss Scarlett','Colonel Mustard','Mrs. White','Reverend Green','Mrs. Peacock','Professor Plum','Dr. Orchid','Monsieur Brunette'];
+const NAMES = ['Miss Carmine','Brigadier Ochre','Dowager Ivory','Deacon Viridian','Baroness Indigo','Professor Mulberry','Doctor Cerise','Monsieur Sepia'];
 const COLORS = ['#b33249','#c39a35','#d1c8ac','#36735f','#416c9d','#7e4d94','#d2759b','#79513c'];
 export const characterColor = name => COLORS[Math.max(0, NAMES.indexOf(name))];
 
@@ -106,7 +106,7 @@ export function buildScenery(scene, board) {
     for(const dx of [-w/2,0,w/2])box(g,x+dx,y,z+.08,.04,h,.06,gold,'metal');
     box(g,x,y,z+.08,w,.05,.07,gold,'metal');
     box(g,x,y-h/2-.06,z+.13,w+.28,.11,.29,'#ccb68e','marble');
-    if(g.userData.room==='Conservatory') {
+    if(g.userData.room==='Glasshouse') {
       const positions=new Float32Array(24*6);
       for(let i=0;i<24;i++) {const px=x+(((i*17)%24)/24-.5)*w, py=y-h/2+(i*7%24)/24*h;positions.set([px,py,z+.075,px-.012,py+.09,z+.075],i*6);}
       const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
@@ -166,10 +166,10 @@ export function buildScenery(scene, board) {
     const x=(c0+c1+1)/2-board.cols/2,z=(r0+r1+1)/2-board.rows/2;
     const group=new THREE.Group();group.position.set(x,0,z);group.userData.room=name;scene.add(group);
     const color=ROOM_STORIES[name][2];
-    const floor=box(group,0,.045,0,w,.2,d,name==='Hall'||name==='Kitchen'?'#c0c5af':'#c0a378',name==='Hall'||name==='Kitchen'?'marble':'parquet');
+    const floor=box(group,0,.045,0,w,.2,d,name==='Foyer'||name==='Scullery'?'#c0c5af':'#c0a378',name==='Foyer'||name==='Scullery'?'marble':'parquet');
     floor.material=floor.material.clone();extraMaterials.add(floor.material);floor.userData.target={room:name};floorTargets.push(floor);roomFloors.set(name,floor);
     box(group,0,-.17,0,w+.14,.28,d+.14,'#283c30','wood',true);
-    rug(group,w*.62,d*.58,name==='Ballroom'?'#5b6246':name==='Library'?'#7f5542':color);
+    rug(group,w*.62,d*.58,name==='Salon'?'#5b6246':name==='Reading Room'?'#7f5542':color);
     const doorSet=new Set(room.doorCells.map(p=>`${p.r},${p.c}`));
     // Tall decorated north/west walls; low south/east walls keep the view open.
     function wall(px,pz,length,rotation,tall,hasDoor=false) {
@@ -204,12 +204,12 @@ export function buildScenery(scene, board) {
       wall(w/2,r+.5-(r0+r1+1)/2,1,-Math.PI/2,false,doorSet.has(`${r},${c1}`));
     }
     const back=-d/2+.62;
-    if(name==='Conservatory'){
+    if(name==='Glasshouse'){
       for(const dx of [-w/2+1,w/2-1])windowFrame(group,dx,-d/2+.14,1.35,1.7);
       for(const dx of [-w/2+.7,w/2-.7])for(const dz of [back+.2,.15])plant(group,dx,dz,1.1);
       tabletop(group,0,-.4,1,.85,'#b4b69a');chair(group,-.8,-.4,'#a9ad83',Math.PI/2);chair(group,.8,-.4,'#a9ad83',-Math.PI/2);
       const arch=ring(group,0,2.2,back,1.45,.04,gold);arch.scale.set(1,.7,1);
-    }else if(name==='Kitchen'){
+    }else if(name==='Scullery'){
       windowFrame(group,.3,-d/2+.15,1.25,1.25);
       box(group,0,.64,back,w-1.05,1.04,.85,'#a6ada0','plain',true);
       box(group,0,1.2,back,w-.95,.13,.98,'#ccc9ae','marble',true);
@@ -221,13 +221,13 @@ export function buildScenery(scene, board) {
       tabletop(group,-.3,-.05,1.8,1.05);box(group,-.35,1.01,-.05,.75,.035,.55,'#c7a66e','wood');
       for(let i=0;i<3;i++)orb(group,-.55+i*.18,1.1,-.05,.09,i%2?'#ae6e37':'#69824b');
       for(let i=0;i<3;i++){const pan=cyl(group,-w/2+.2,1.8,back+.65+i*.55,.18,.18,.06,'#b0824c','metal');pan.rotation.z=Math.PI/2;}
-    }else if(name==='Library'||name==='Study'){
+    }else if(name==='Reading Room'||name==='Bureau'){
       for(const dx of [-w/2+.9,w/2-.9])shelf(group,dx,back,1.35);
       painting(group,0,1.88,-d/2+.15,index%8,.9,1.1);
-      tabletop(group,0,-.2,1.95,1.03);chair(group,0,.67,name==='Study'?'#4c6964':'#8c514b');
+      tabletop(group,0,-.2,1.95,1.03);chair(group,0,.67,name==='Bureau'?'#4c6964':'#8c514b');
       box(group,-.15,1.005,-.15,.55,.02,.45,'#e5dcc0');box(group,.14,1.017,-.19,.055,.025,.37,'#283b31');candle(group,.66,1.01,-.35);
       for(let i=0;i<3;i++)box(group,-.67,1.04+i*.06,-.35,.4,.05,.3,['#965648','#6b8168','#b79b62'][i]);
-      if(name==='Study') {
+      if(name==='Bureau') {
         const cx=-w/2+.52, cz=.2;
         box(group,cx,.95,cz,.65,1.8,.36,darkWood,'wood');
         box(group,cx,.9,cz+.19,.43,1.1,.025,'#182820');
@@ -239,12 +239,12 @@ export function buildScenery(scene, board) {
         const bob=orb(pendulum,0,-.63,0,.105,gold,'metal');bob.scale.z=.25;bob.userData.target={decoration:true};
         details.push({kind:'clock',mesh:pendulum});
       }
-      if(name==='Library'){const reading=new THREE.Group();reading.position.set(-w/2+.65,0,.35);reading.rotation.y=Math.PI/2;group.add(reading);shelf(reading,0,0,1.5);}
-    }else if(name==='Lounge'){
+      if(name==='Reading Room'){const reading=new THREE.Group();reading.position.set(-w/2+.65,0,.35);reading.rotation.y=Math.PI/2;group.add(reading);shelf(reading,0,0,1.5);}
+    }else if(name==='Parlour'){
       fireplace(group,-1.25,back);painting(group,-1.25,2.08,-d/2+.16,4,.86,.8);windowFrame(group,1.2,-d/2+.14,.85,1.35);
       sofa(group,.6,-.55,'#814451',2.5);sofa(group,-1.8,.4,'#814451',1.25,Math.PI/2);
       tabletop(group,.2,.52,1.6,.75);candle(group,.55,1,.5);cyl(group,-.2,1.04,.45,.13,.13,.05,'#e3d7b1');plant(group,w/2-.65,.4);
-    }else if(name==='Billiard Room'){
+    }else if(name==='Smoking Room'){
       painting(group,-1.3,1.93,-d/2+.16,1,.85,1.05);windowFrame(group,.7,-d/2+.14,1.1,1.35);
       tabletop(group,0,-.4,2.8,1.6,darkWood);box(group,0,1.035,-.4,2.63,.065,1.42,'#34755e','plain',true);
       for(const dx of [-1.2,0,1.2])for(const dz of [-.57,.57])cyl(group,dx,1.075,-.4+dz,.085,.085,.015,'#14251c');
@@ -252,7 +252,7 @@ export function buildScenery(scene, board) {
       const cue=box(group,.4,1.12,-.73,1.8,.028,.028,'#d4b882','wood');cue.rotation.y=.22;
       for(let i=0;i<4;i++){const stick=cyl(group,-w/2+.2,1.5,back+.6+i*.19,.018,.026,1.6,wood,'wood');stick.rotation.z=-.12;}
       chandelier(group,0,-.5,.55);
-    }else if(name==='Dining Room'){
+    }else if(name==='Supper Room'){
       fireplace(group,0,back);painting(group,0,2.13,-d/2+.16,1,1,.75);
       tabletop(group,0,-.05,2.25,1.35);
       for(const dx of [-.72,.72]){
@@ -260,19 +260,19 @@ export function buildScenery(scene, board) {
         for(const dz of [-.35,.35]){cyl(group,dx,1.01,dz,.18,.18,.018,'#e8dbb3');cyl(group,dx+.24,1.05,dz,.036,.04,.11,gold,'metal');}
       }
       candle(group,0,1.01,0);chandelier(group,0,-.05,.6);plant(group,w/2-.65,back+.3);
-    }else if(name==='Hall'){
+    }else if(name==='Foyer'){
       for(let i=0;i<5;i++)box(group,-.5,.12+i*.12,back+i*.28,1.8,.24+i*.24,.3,'#c6c5ae','marble');
       for(const dx of [-1.45,.45]){cyl(group,dx,.9,back+.55,.065,.065,1.3,gold,'metal');box(group,dx,1.6,back+.55,.08,.08,1.5,darkWood,'wood');}
       for(const dx of [-w/2+.45,w/2-.45]){cyl(group,dx,1.45,back,.13,.18,2.6,'#d6c7a2','marble');cyl(group,dx,2.78,back,.25,.25,.14,gold,'metal');}
       painting(group,.85,1.9,-d/2+.15,0,.7,1.2);plant(group,w/2-.65,.35);chandelier(group,0,0,.55);
-    }else if(name==='Cellar'){
+    }else if(name==='Vaults'){
       for(const dx of [-w/2+.7,w/2-.7])for(let i=0;i<3;i++){
         const dz=back+i*1.1;cyl(group,dx,.65,dz,.36,.43,1.05,wood,'wood');
         for(const y of [.28,.9])cyl(group,dx,y,dz,.418,.418,.06,'#343d32','metal');
       }
       shelf(group,0,back,1.6,2);tabletop(group,0,0,1.4,.8);candle(group,0,1,0);
       for(let i=0;i<3;i++){cyl(group,-.4+i*.3,1.15,0,.07,.08,.25,'#395747','metal');cyl(group,-.4+i*.3,1.32,0,.028,.04,.1,'#395747');}
-    }else if(name==='Trophy Room'){
+    }else if(name==='Menagerie'){
       box(group,0,.55,back,w-1.1,.8,.65,darkWood,'wood',true);
       for(const dx of [-1,0,1]){box(group,dx,1.01,back,.28,.12,.28,'#242e28');cyl(group,dx,1.25,back,.06,.15,.35,gold,'metal');const cup=cyl(group,dx,1.49,back,.18,.06,.2,gold,'metal');cup.castShadow=true;for(const side of [-1,1])ring(group,dx+side*.17,1.47,back,.105,.018,gold);}
       painting(group,0,2.2,-d/2+.15,7,1,.7);
@@ -300,7 +300,7 @@ export function buildScenery(scene, board) {
     roomGroups.set(name,{group,box:new THREE.Box3(new THREE.Vector3(x-w/2-.12,-.35,z-d/2-.12),new THREE.Vector3(x+w/2+.12,3.08,z+d/2+.12)),lamp:new THREE.Vector3(x+w/2-.48,2.15,z+back+.18)});
     anchors.push({name,point:new THREE.Vector3(x,.6,z+d/2-.3)});
   }
-  if(!board.rooms.Cellar){
+  if(!board.rooms.Vaults){
     box(estate,0,.15,0,4.7,.4,4.7,darkWood,'wood',true);box(estate,0,.38,0,4.5,.06,4.5,gold,'metal');
     box(estate,0,.45,0,4.3,.08,4.3,'#344f3c');
     const envelope=box(estate,0,.58,0,1.7,.12,1.15,'#d8caaa','plain',true);envelope.rotation.y=-.22;cyl(estate,0,.68,0,.18,.18,.05,'#923f41');

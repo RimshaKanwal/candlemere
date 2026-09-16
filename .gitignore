@@ -4,3 +4,8 @@ dist/
 .DS_Store
 
 .claude/settings.local.json
+
+# Credentials — never commit these.
+.env
+.env.*
+!.env.example

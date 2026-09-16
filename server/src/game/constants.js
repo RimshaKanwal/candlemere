@@ -5,29 +5,29 @@ export const MAX_PLAYERS = 8;
 // weapons) kicks in for 7-8 players so there are enough cards to deal
 // a reasonable hand to everyone alongside the 3 solution cards.
 const CLASSIC_SUSPECTS = [
-  "Miss Scarlett",
-  "Colonel Mustard",
-  "Mrs. White",
-  "Reverend Green",
-  "Mrs. Peacock",
-  "Professor Plum",
+  "Miss Carmine",
+  "Brigadier Ochre",
+  "Dowager Ivory",
+  "Deacon Viridian",
+  "Baroness Indigo",
+  "Professor Mulberry",
 ];
 
-const EXPANDED_SUSPECTS = [...CLASSIC_SUSPECTS, "Dr. Orchid", "Monsieur Brunette"];
+const EXPANDED_SUSPECTS = [...CLASSIC_SUSPECTS, "Doctor Cerise", "Monsieur Sepia"];
 
 const CLASSIC_WEAPONS = [
-  "Candlestick",
-  "Knife",
-  "Lead Pipe",
-  "Revolver",
-  "Rope",
-  "Wrench",
+  "Candelabra",
+  "Letter Opener",
+  "Fire Poker",
+  "Duelling Pistol",
+  "Silk Cord",
+  "Marble Bust",
 ];
 
-const EXPANDED_WEAPONS = [...CLASSIC_WEAPONS, "Poison", "Bow and Arrow"];
+const EXPANDED_WEAPONS = [...CLASSIC_WEAPONS, "Laudanum", "Antique Sabre"];
 
 // ── Board geometry ──────────────────────────────────────────────────────
-// The board is a 2D tile grid modeled on the physical Cluedo board: nine
+// The board is a 2D tile grid modeled on a classic country-house murder board: nine
 // rooms (plus two extra for 7-8 players) arranged around an open field of
 // corridor squares. Players move square-by-square with a die roll and enter
 // rooms through doors. Rooms are authored as rectangles + door cells here;
@@ -39,50 +39,50 @@ export const GRID = { rows: 25, cols: 24 };
 // (rendered as a gap in the wall) and its `entry` — the corridor square just
 // outside, which is where you step in/out.
 const CLASSIC_ROOM_DEFS = {
-  Kitchen: { rect: { r0: 1, r1: 5, c0: 1, c1: 5 }, doors: [{ cell: { r: 5, c: 3 }, entry: { r: 6, c: 3 } }] },
-  Ballroom: {
+  Scullery: { rect: { r0: 1, r1: 5, c0: 1, c1: 5 }, doors: [{ cell: { r: 5, c: 3 }, entry: { r: 6, c: 3 } }] },
+  Salon: {
     rect: { r0: 1, r1: 6, c0: 9, c1: 15 },
     doors: [
       { cell: { r: 6, c: 10 }, entry: { r: 7, c: 10 } },
       { cell: { r: 6, c: 14 }, entry: { r: 7, c: 14 } },
     ],
   },
-  Conservatory: { rect: { r0: 1, r1: 4, c0: 18, c1: 22 }, doors: [{ cell: { r: 4, c: 20 }, entry: { r: 5, c: 20 } }] },
-  "Dining Room": {
+  Glasshouse: { rect: { r0: 1, r1: 4, c0: 18, c1: 22 }, doors: [{ cell: { r: 4, c: 20 }, entry: { r: 5, c: 20 } }] },
+  "Supper Room": {
     rect: { r0: 9, r1: 14, c0: 1, c1: 6 },
     doors: [
       { cell: { r: 11, c: 6 }, entry: { r: 11, c: 7 } },
       { cell: { r: 9, c: 4 }, entry: { r: 8, c: 4 } },
     ],
   },
-  "Billiard Room": {
+  "Smoking Room": {
     rect: { r0: 8, r1: 11, c0: 18, c1: 22 },
     doors: [
       { cell: { r: 10, c: 18 }, entry: { r: 10, c: 17 } },
       { cell: { r: 11, c: 20 }, entry: { r: 12, c: 20 } },
     ],
   },
-  Library: {
+  "Reading Room": {
     rect: { r0: 14, r1: 17, c0: 17, c1: 22 },
     doors: [
       { cell: { r: 15, c: 17 }, entry: { r: 15, c: 16 } },
       { cell: { r: 14, c: 19 }, entry: { r: 13, c: 19 } },
     ],
   },
-  Lounge: { rect: { r0: 19, r1: 23, c0: 1, c1: 6 }, doors: [{ cell: { r: 19, c: 4 }, entry: { r: 18, c: 4 } }] },
-  Hall: {
+  Parlour: { rect: { r0: 19, r1: 23, c0: 1, c1: 6 }, doors: [{ cell: { r: 19, c: 4 }, entry: { r: 18, c: 4 } }] },
+  Foyer: {
     rect: { r0: 18, r1: 23, c0: 10, c1: 14 },
     doors: [
       { cell: { r: 18, c: 11 }, entry: { r: 17, c: 11 } },
       { cell: { r: 18, c: 13 }, entry: { r: 17, c: 13 } },
     ],
   },
-  Study: { rect: { r0: 20, r1: 23, c0: 18, c1: 22 }, doors: [{ cell: { r: 20, c: 20 }, entry: { r: 19, c: 20 } }] },
+  Bureau: { rect: { r0: 20, r1: 23, c0: 18, c1: 22 }, doors: [{ cell: { r: 20, c: 20 }, entry: { r: 19, c: 20 } }] },
 };
 
 // Extra rooms activated only for 7-8 players.
 const EXTRA_ROOM_DEFS = {
-  Cellar: {
+  Vaults: {
     rect: { r0: 10, r1: 15, c0: 9, c1: 14 },
     doors: [
       { cell: { r: 10, c: 11 }, entry: { r: 9, c: 11 } },
@@ -91,7 +91,7 @@ const EXTRA_ROOM_DEFS = {
       { cell: { r: 13, c: 14 }, entry: { r: 13, c: 15 } },
     ],
   },
-  "Trophy Room": {
+  "Menagerie": {
     rect: { r0: 15, r1: 17, c0: 1, c1: 5 },
     doors: [{ cell: { r: 16, c: 5 }, entry: { r: 16, c: 6 } }],
   },
@@ -102,22 +102,22 @@ const CENTER_CELLAR = { r0: 10, r1: 15, c0: 9, c1: 14 };
 
 // Diagonal secret passages between opposite corner rooms — instant, no dice.
 export const SECRET_PASSAGES = {
-  Kitchen: "Study",
-  Study: "Kitchen",
-  Lounge: "Conservatory",
-  Conservatory: "Lounge",
+  Scullery: "Bureau",
+  Bureau: "Scullery",
+  Parlour: "Glasshouse",
+  Glasshouse: "Parlour",
 };
 
 // Where each character's token starts — an edge corridor square.
 export const START_POSITIONS = {
-  "Miss Scarlett": { r: 24, c: 7 },
-  "Colonel Mustard": { r: 17, c: 23 },
-  "Mrs. White": { r: 0, c: 9 },
-  "Reverend Green": { r: 0, c: 14 },
-  "Mrs. Peacock": { r: 6, c: 23 },
-  "Professor Plum": { r: 8, c: 0 },
-  "Dr. Orchid": { r: 24, c: 16 },
-  "Monsieur Brunette": { r: 0, c: 5 },
+  "Miss Carmine": { r: 24, c: 7 },
+  "Brigadier Ochre": { r: 17, c: 23 },
+  "Dowager Ivory": { r: 0, c: 9 },
+  "Deacon Viridian": { r: 0, c: 14 },
+  "Baroness Indigo": { r: 6, c: 23 },
+  "Professor Mulberry": { r: 8, c: 0 },
+  "Doctor Cerise": { r: 24, c: 16 },
+  "Monsieur Sepia": { r: 0, c: 5 },
 };
 
 export const CLASSIC_ROOMS = Object.keys(CLASSIC_ROOM_DEFS);

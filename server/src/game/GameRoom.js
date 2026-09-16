@@ -1,5 +1,11 @@
 import { MIN_PLAYERS, MAX_PLAYERS, getCardSets, buildBoard, SECRET_PASSAGES } from "./constants.js";
 
+// Bounds for a submitted notepad. A full 8-player expanded sheet is roughly
+// 370 cells; the cap leaves headroom without letting the blob grow unbounded.
+// Values must be the glyph keys Notepad.jsx writes (see NOTEPAD_GLYPH).
+const MAX_NOTE_CELLS = 600;
+const NOTE_VALUES = new Set(["x", "check", "?"]);
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -50,6 +56,9 @@ export class GameRoom {
     // fires every corridor step), so clients can't use message text to tell
     // "already seen" apart from "new" — tag each entry with a monotonic seq.
     this.logSeq = 0;
+    // Public table talk, append-only, in order. Bots read forward from their
+    // own cursor; it holds only what every seat at the table witnessed.
+    this.facts = [];
   }
 
   get playerCount() {
@@ -59,6 +68,18 @@ export class GameRoom {
   pushLog(type, message) {
     this.logSeq += 1;
     this.log.push({ type, message, seq: this.logSeq });
+  }
+
+  pushFact(fact) {
+    this.facts.push(fact);
+  }
+
+  get hasBots() {
+    return this.players.some((p) => p.isBot);
+  }
+
+  get humanCount() {
+    return this.players.filter((p) => !p.isBot).length;
   }
 
   addPlayer(socketId, name, userId = null) {
@@ -81,6 +102,39 @@ export class GameRoom {
     };
     this.players.push(player);
     return player;
+  }
+
+  addBot(name) {
+    if (this.status !== "lobby") throw new Error("Game already started");
+    if (this.players.length >= this.maxPlayers) throw new Error("Room is full");
+    const id = `bot${this.players.length + 1}_${Math.random().toString(36).slice(2, 8)}`;
+    const player = {
+      id,
+      socketId: null,
+      userId: null,
+      isBot: true,
+      name,
+      character: null,
+      cards: [],
+      position: null,
+      isHost: false,
+      eliminated: false,
+      // Bots are always "present" so the table never skips their answer, but
+      // they must not keep an abandoned room alive — see humanCount.
+      connected: true,
+      timesShown: 0,
+      suggestionsMade: 0,
+    };
+    this.players.push(player);
+    return player;
+  }
+
+  removeBot(botId) {
+    if (this.status !== "lobby") throw new Error("Game already started");
+    const bot = this.players.find((p) => p.id === botId && p.isBot);
+    if (!bot) throw new Error("No such bot");
+    this.players = this.players.filter((p) => p.id !== botId);
+    return bot;
   }
 
   removePlayerBySocket(socketId) {
@@ -142,6 +196,7 @@ export class GameRoom {
     this.status = "playing";
     this.log = [];
     this.logSeq = 0;
+    this.facts = [];
     this.pushLog("system", "The game has begun. Good luck, detectives.");
     this.winnerId = null;
     this.turnState = { diceValue: null, hasMoved: false, hasSuggested: false };
@@ -327,7 +382,7 @@ export class GameRoom {
     this.turnState.hasSuggested = true;
     player.suggestionsMade += 1;
     // The suggested room must be where the suggesting player currently is.
-    // (Note: classic Cluedo also teleports the accused suspect's own token
+    // (Note: the original board game also teleports the accused suspect's own token
     // into that room — deliberately not done here.)
     player.position = { room, cell: null };
 
@@ -355,6 +410,8 @@ export class GameRoom {
       const responder = this.players.find((p) => p.id === pending.responderOrder[pending.index]);
       if (responder && responder.connected) return {};
       this.pushLog("system", `${responder?.name || "A player"} is away and was skipped.`);
+      // Being skipped proves nothing — they were never actually asked.
+      if (responder) this.pushFact({ type: "skip", playerId: responder.id, suggestion: pending.suggestion });
       if (responder && this.lastSuggestion) this.lastSuggestion.responses[responder.id] = "skip";
       pending.index += 1;
     }
@@ -382,8 +439,9 @@ export class GameRoom {
       const suggester = this.players.find((p) => p.id === pending.by);
       this.pushLog("system", `${responder.name} disproved the suggestion by showing a card to ${suggester.name}.`);
       if (this.lastSuggestion) this.lastSuggestion.responses[playerId] = "show";
+      this.pushFact({ type: "show", playerId, suggestion: pending.suggestion });
       if (suggester) suggester.timesShown += 1;
-      const reveal = { suggesterId: pending.by, shownCard: { type: card.type, value: card.value }, byName: responder.name };
+      const reveal = { suggesterId: pending.by, shownCard: { type: card.type, value: card.value }, byName: responder.name, byId: responder.id };
       this.pendingSuggestion = null;
       // Turn stays with the suggester — they may now accuse or end their turn.
       return { privateReveal: reveal };
@@ -393,6 +451,7 @@ export class GameRoom {
     if (matches.length > 0) throw new Error("You hold one of these cards — you must show one");
     this.pushLog("system", `${responder.name} has none of those cards.`);
     if (this.lastSuggestion) this.lastSuggestion.responses[playerId] = "pass";
+    this.pushFact({ type: "pass", playerId, suggestion: pending.suggestion });
     pending.index += 1;
     return this.autoAdvanceSuggestion();
   }
@@ -455,7 +514,21 @@ export class GameRoom {
     if (this.status !== "finished") throw new Error("The game hasn't ended yet");
     const player = this.players.find((p) => p.id === playerId);
     if (!player) throw new Error("Unknown player");
-    this.finalNotes[playerId] = marks && typeof marks === "object" ? marks : {};
+    // Whatever lands here is echoed to every other client in the next state
+    // broadcast, so it is treated as untrusted input rather than stored as
+    // sent: only the notepad's own glyphs, and only as many cells as a real
+    // sheet can hold. Otherwise one client could push arbitrary megabytes
+    // into every other player's memory.
+    const clean = {};
+    if (marks && typeof marks === "object" && !Array.isArray(marks)) {
+      for (const [key, value] of Object.entries(marks)) {
+        if (Object.keys(clean).length >= MAX_NOTE_CELLS) break;
+        if (typeof key !== "string" || key.length > 120) continue;
+        if (!NOTE_VALUES.has(value)) continue;
+        clean[key] = value;
+      }
+    }
+    this.finalNotes[playerId] = clean;
   }
 
   // Public + (for the current responder) private view of an in-flight
@@ -510,6 +583,7 @@ export class GameRoom {
         character: p.character,
         position: p.position,
         isHost: p.isHost,
+        isBot: !!p.isBot,
         eliminated: p.eliminated,
         connected: p.connected,
         cardCount: p.cards.length,

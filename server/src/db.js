@@ -2,9 +2,31 @@ import pg from "pg";
 
 const { Pool } = pg;
 
+const CONNECTION_STRING = process.env.DATABASE_URL;
+if (!CONNECTION_STRING) {
+  throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill it in.");
+}
+
+const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(CONNECTION_STRING);
+
+// Managed Postgres (Render, Heroku, Supabase) terminates TLS with a
+// certificate the default trust store does not recognise, which is why
+// `rejectUnauthorized: false` is the usual workaround — but it also disables
+// the check that the server is who it claims to be. Set PGSSLROOTCERT to the
+// provider's CA bundle to verify properly; the opt-out is explicit and warns.
+function sslConfig() {
+  if (isLocal) return false;
+  if (process.env.PGSSLROOTCERT) return { rejectUnauthorized: true, ca: process.env.PGSSLROOTCERT };
+  console.warn(
+    "[db] Connecting over TLS without verifying the server certificate. " +
+      "Set PGSSLROOTCERT to your provider's CA bundle to enable verification."
+  );
+  return { rejectUnauthorized: false };
+}
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes("localhost") ? false : { rejectUnauthorized: false },
+  connectionString: CONNECTION_STRING,
+  ssl: sslConfig(),
 });
 
 export async function initSchema() {

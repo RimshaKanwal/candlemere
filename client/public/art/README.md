@@ -1,26 +1,29 @@
 # Custom artwork
 
-The game ships with emoji/colour placeholders. To use real images (your own
-or properly licensed art — note the official Hasbro Cluedo artwork is
-copyrighted and can't be bundled here), drop PNG files into these folders and
-flip `USE_CUSTOM_ART` to `true` in `client/src/pages/Game.jsx`.
+The game ships with emoji/colour placeholders. To use real images (your own,
+or properly licensed art — do not bundle copyrighted commercial board-game
+artwork), drop PNG files into these folders and flip `USE_CUSTOM_ART` to `true`
+in `client/src/pages/Game.jsx`.
 
-Files are matched by a lowercase, hyphenated slug of the name. Any file that's
-missing falls back to its emoji, so a partial set is fine.
+Files are matched by a lowercase, hyphenated slug of the card's name — so the
+filenames below mirror Candlemere's own cast, weapons and rooms. The last two
+of each set only appear in 7–8 player games. Any file that's missing falls
+back to its emoji, so a partial set is fine.
 
 ```
 public/art/
   suspects/
-    miss-scarlett.png      colonel-mustard.png   mrs-white.png
-    reverend-green.png     mrs-peacock.png       professor-plum.png
-    dr-orchid.png          monsieur-brunette.png
+    miss-carmine.png       brigadier-ochre.png    dowager-ivory.png
+    deacon-viridian.png    baroness-indigo.png    professor-mulberry.png
+    doctor-cerise.png      monsieur-sepia.png
   weapons/
-    candlestick.png  knife.png   lead-pipe.png  revolver.png
-    rope.png         wrench.png  poison.png     bow-and-arrow.png
+    candelabra.png         letter-opener.png      fire-poker.png
+    duelling-pistol.png    silk-cord.png          marble-bust.png
+    laudanum.png           antique-sabre.png
   rooms/
-    kitchen.png      ballroom.png       conservatory.png  dining-room.png
-    billiard-room.png library.png        lounge.png        hall.png
-    study.png        cellar.png         trophy-room.png
+    scullery.png    salon.png         glasshouse.png    supper-room.png
+    smoking-room.png reading-room.png parlour.png       foyer.png
+    bureau.png      vaults.png        menagerie.png
 ```
 
 - **suspects** render as round avatars (square images, ~square crop work best).

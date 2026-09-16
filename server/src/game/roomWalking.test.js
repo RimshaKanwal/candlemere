@@ -6,9 +6,9 @@ function fixture() {
   const game=new GameRoom('WALK',3);
   for(const name of ['Alice','Bob','Cara'])game.addPlayer(name,name);
   game.start();
-  const player=game.players[0];player.position={room:'Kitchen',cell:null};
-  const {c0,c1,r0,r1}=game.board.rooms.Kitchen.rect;
-  return {game,player,pose:{room:'Kitchen',x:(c0+c1+1)/2-game.board.cols/2,z:(r0+r1+1)/2-game.board.rows/2,yaw:0}};
+  const player=game.players[0];player.position={room:'Scullery',cell:null};
+  const {c0,c1,r0,r1}=game.board.rooms.Scullery.rect;
+  return {game,player,pose:{room:'Scullery',x:(c0+c1+1)/2-game.board.cols/2,z:(r0+r1+1)/2-game.board.rows/2,yaw:0}};
 }
 test('room walking is shared ephemeral state and leaves rules, cards and turn untouched',()=>{
   const {game,player,pose}=fixture(), before=JSON.stringify(game.toClientState(player.id));
@@ -18,7 +18,7 @@ test('room walking is shared ephemeral state and leaves rules, cards and turn un
 });
 test('rejects non-finite, outside-room, wrong-room and disconnected updates',()=>{
   const {game,player,pose}=fixture();
-  for(const invalid of [null,{...pose,x:NaN},{...pose,z:Infinity},{...pose,x:1000},{...pose,room:'Study'}])assert.equal(acceptRoomWalk(game,player.id,invalid),null);
+  for(const invalid of [null,{...pose,x:NaN},{...pose,z:Infinity},{...pose,x:1000},{...pose,room:'Bureau'}])assert.equal(acceptRoomWalk(game,player.id,invalid),null);
   player.connected=false;assert.equal(acceptRoomWalk(game,player.id,pose),null);
 });
 test('throttles updates and rejects jumps, accepts normal walking',()=>{
@@ -30,8 +30,8 @@ test('throttles updates and rejects jumps, accepts normal walking',()=>{
 });
 test('room exit and game completion discard stale positions',()=>{
   const {game,player,pose}=fixture();acceptRoomWalk(game,player.id,pose);
-  player.position={room:'Study',cell:null};assert.deepEqual(walkingSnapshot(game),[]);
-  player.position={room:'Kitchen',cell:null};acceptRoomWalk(game,player.id,pose);
+  player.position={room:'Bureau',cell:null};assert.deepEqual(walkingSnapshot(game),[]);
+  player.position={room:'Scullery',cell:null};acceptRoomWalk(game,player.id,pose);
   game.status='finished';assert.deepEqual(walkingSnapshot(game),[]);
 });
 

@@ -5,9 +5,11 @@ import express from "express";
 import cors from "cors";
 import { Server } from "socket.io";
 import { GameManager } from "./game/gameManager.js";
+import { createBotRunner, nextBotName } from "./game/bots.js";
 import { MIN_PLAYERS, MAX_PLAYERS } from "./game/constants.js";
 import { initSchema } from "./db.js";
 import { createGuest, registerOrLogin, verifyToken, getUserById, getLeaderboard, getMenace, recordGameResult } from "./auth.js";
+import { createRateLimiter } from "./rateLimit.js";
 
 const REACTION_EMOJI = ["😏 Suspicious...", "🤔 Hmm", "😱 No way!", "😂 lol", "🎯 Got you!", "😤 Ugh"];
 
@@ -15,11 +17,36 @@ const PORT = process.env.PORT || 4000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 const app = express();
+
+// Render (and most hosts) put a proxy in front of us, so without this every
+// request would look like it came from the proxy's address and the rate
+// limiters below would treat all users as one client.
+app.set("trust proxy", 1);
+
 app.use(cors({ origin: CLIENT_ORIGIN }));
-app.use(express.json());
+// Bodies here are a username and a PIN; the default 100kb is already generous.
+app.use(express.json({ limit: "16kb" }));
+
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  next();
+});
+
+// Sign-in is the one endpoint worth guessing at, so it gets the tight budget.
+// The per-username lockout in auth.js covers the other axis: one attacker
+// rotating IPs against a single account.
+const authLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: "Too many sign-in attempts. Please wait a few minutes and try again.",
+});
+const readLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 120 });
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-app.post("/api/auth", async (req, res) => {
+app.post("/api/auth", authLimiter, async (req, res) => {
   try {
     const { token, user } = await registerOrLogin(req.body?.username, req.body?.pin);
     res.json({ token, ...user });
@@ -28,12 +55,12 @@ app.post("/api/auth", async (req, res) => {
   }
 });
 
-app.post("/api/guest", (req, res) => {
+app.post("/api/guest", authLimiter, (req, res) => {
   try { res.json(createGuest(req.body?.username)); }
   catch (err) { res.status(400).json({ error: err.message }); }
 });
 
-app.get("/api/me", async (req, res) => {
+app.get("/api/me", readLimiter, async (req, res) => {
   try {
     const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     const decoded = verifyToken(token);
@@ -45,7 +72,7 @@ app.get("/api/me", async (req, res) => {
   }
 });
 
-app.get("/api/leaderboard", async (_req, res) => {
+app.get("/api/leaderboard", readLimiter, async (_req, res) => {
   try {
     res.json(await getLeaderboard());
   } catch (err) {
@@ -53,7 +80,7 @@ app.get("/api/leaderboard", async (_req, res) => {
   }
 });
 
-app.get("/api/menace", async (_req, res) => {
+app.get("/api/menace", readLimiter, async (_req, res) => {
   try {
     res.json(await getMenace());
   } catch (err) {
@@ -79,13 +106,22 @@ io.use((socket, next) => {
 });
 
 const manager = new GameManager();
+const botRunner = createBotRunner({
+  getRoom: (code) => manager.getRoom(code),
+  broadcast: (code) => broadcastState(code),
+  deliverReveal: (room, reveal) => deliverReveal(room, reveal),
+});
 
 function broadcastState(code) {
   const room = manager.getRoom(code);
   if (!room) return;
   for (const player of room.players) {
+    if (!player.socketId) continue; // a bot seat — nothing to send to
     io.to(player.socketId).emit("state", { ...room.toClientState(player.id), roomWalks: walkingSnapshot(room), roomInteractions: interactionSnapshot(room) });
   }
+  // Every state change funnels through here, so this is the one place that
+  // needs to ask whether a bot now owes the table a move.
+  botRunner.schedule(code);
 }
 
 // When a suggestion is disproved (or no one can), privately tell the
@@ -94,6 +130,12 @@ function deliverReveal(room, privateReveal) {
   if (!privateReveal) return;
   const suggester = room.players.find((p) => p.id === privateReveal.suggesterId);
   if (!suggester) return;
+  if (suggester.isBot) {
+    if (privateReveal.shownCard && privateReveal.byId) {
+      suggester.brain?.noteShownCard(privateReveal.byId, privateReveal.shownCard);
+    }
+    return;
+  }
   io.to(suggester.socketId).emit("suggestionResult", {
     disprovingPlayerName: privateReveal.byName || null,
     shownCard: privateReveal.shownCard || null,
@@ -119,8 +161,10 @@ function leavePreviousRoom(socket) {
   const prevRoom = manager.getRoom(prevCode);
   if (prevRoom) {
     prevRoom.removePlayerBySocket(socket.id);
-    if (prevRoom.players.length === 0 || !prevRoom.players.some((p) => p.connected)) manager.deleteRoom(prevCode);
-    else broadcastState(prevCode);
+    if (prevRoom.players.length === 0 || !prevRoom.players.some((p) => !p.isBot && p.connected)) {
+      botRunner.cancel(prevCode);
+      manager.deleteRoom(prevCode);
+    } else broadcastState(prevCode);
   }
   socket.data.code = null;
   socket.data.playerId = null;
@@ -128,7 +172,7 @@ function leavePreviousRoom(socket) {
 
 io.on("connection", (socket) => {
   socket.use(([event, payload], next) => {
-    const seatActions = ["roomInteraction", "roomWalk", "startGame", "rollDice", "movePlayer", "useSecretPassage", "makeSuggestion", "respondSuggestion", "makeAccusation", "endTurn", "sendReaction", "submitFinalNotes"];
+    const seatActions = ["roomInteraction", "roomWalk", "startGame", "addBot", "removeBot", "rollDice", "movePlayer", "useSecretPassage", "makeSuggestion", "respondSuggestion", "makeAccusation", "endTurn", "sendReaction", "submitFinalNotes"];
     if (seatActions.includes(event) && (!socket.data.playerId || payload?.playerId !== socket.data.playerId || payload?.code !== socket.data.code)) {
       socket.emit("errorMessage", "This is not your seat");
       return;
@@ -218,6 +262,30 @@ io.on("connection", (socket) => {
     leavePreviousRoom(socket);
   });
 
+  socket.on("addBot", ({ code, playerId }) => {
+    wrap(socket, () => {
+      const room = manager.getRoom(code);
+      if (!room) throw new Error("Room not found");
+      const player = room.players.find((p) => p.id === playerId);
+      if (!player?.isHost) throw new Error("Only the host can add a computer detective");
+      const bot = room.addBot(nextBotName(room));
+      room.pushLog("system", `${bot.name} took a seat at the table.`);
+      broadcastState(code);
+    });
+  });
+
+  socket.on("removeBot", ({ code, playerId, botId }) => {
+    wrap(socket, () => {
+      const room = manager.getRoom(code);
+      if (!room) throw new Error("Room not found");
+      const player = room.players.find((p) => p.id === playerId);
+      if (!player?.isHost) throw new Error("Only the host can remove a computer detective");
+      const bot = room.removeBot(botId);
+      room.pushLog("system", `${bot.name} left the table.`);
+      broadcastState(code);
+    });
+  });
+
   socket.on("startGame", ({ code, playerId }) => {
     wrap(socket, () => {
       const room = manager.getRoom(code);
@@ -225,6 +293,7 @@ io.on("connection", (socket) => {
       const player = room.players.find((p) => p.id === playerId);
       if (!player?.isHost) throw new Error("Only the host can start the game");
       room.start();
+      botRunner.primeBots(room);
       broadcastState(room.code);
     });
   });
@@ -289,7 +358,7 @@ io.on("connection", (socket) => {
 
       // A wrong accusation can eliminate the last active player, ending the
       // game right here too — either way, record it exactly once.
-      if (gameRoom.status === "finished" && !gameRoom.resultRecorded) {
+      if (gameRoom.status === "finished" && !gameRoom.resultRecorded && !gameRoom.hasBots) {
         gameRoom.resultRecorded = true;
         const winnerPlayer = gameRoom.players.find((p) => p.id === gameRoom.winnerId);
         const participantUserIds = gameRoom.players.map((p) => p.userId).filter(Boolean);
@@ -358,8 +427,10 @@ io.on("connection", (socket) => {
       const stillThere = stillRoom.players.find((p) => p.id === playerId);
       if (!stillThere || stillThere.connected) return; // reconnected in time
       stillRoom.removePlayerBySocket(socket.id);
-      if (stillRoom.players.length === 0 || !stillRoom.players.some((p) => p.connected)) manager.deleteRoom(code);
-      else broadcastState(code);
+      if (stillRoom.players.length === 0 || !stillRoom.players.some((p) => !p.isBot && p.connected)) {
+        botRunner.cancel(code);
+        manager.deleteRoom(code);
+      } else broadcastState(code);
     }, 8000);
   });
 });
@@ -367,7 +438,7 @@ io.on("connection", (socket) => {
 initSchema()
   .then(() => {
     server.listen(PORT, () => {
-      console.log(`Cluedo server listening on port ${PORT}`);
+      console.log(`Candlemere server listening on port ${PORT}`);
       console.log(`Allowed player range: ${MIN_PLAYERS}-${MAX_PLAYERS}`);
     });
   })
