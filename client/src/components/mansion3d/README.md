@@ -61,7 +61,7 @@ Rooms opens a collapsible side browser. Camera buttons sit at the scene edge.
 
 Explore details lists the focused room's interactive props. Objects can also be
 clicked directly, or activated with E when nearby in Walk mode. Drawers animate,
-portraits reveal fictional mansion memories, and the ballroom piano plays a short
+portraits reveal fictional mansion memories, and the music-room piano plays a short
 synthesized melody. Portrait inspections provide local atmosphere. Drawer and piano interactions are
 server-authorized and shared with the room; they never reveal evidence.
 Doors open as avatars approach; footsteps vary between hard floors and wood.
@@ -84,8 +84,8 @@ the actor. Snapshots restore drawer state after reconnecting without replaying o
 piano audio. The state is match memory only. Automatic door animation follows the
 same shared avatar positions. Nearby detectives hear the piano with attenuation.
 
-Glasshouse rain uses animated glass streaks and filtered noise; the bureau has a
-pendulum clock and ticking; fireplaces flicker with lounge crackle; the ballroom
+Greenhouse rain uses animated glass streaks and filtered noise; the office has a
+pendulum clock and ticking; fireplaces flicker with a crackle; the music room
 has a quiet periodic melody. Ambient playback waits for a user gesture, pauses
 scheduling in background tabs, and is disposed with the 3D engine. Moving decor
 becomes static under reduced-motion preferences. Volume preferences are local.

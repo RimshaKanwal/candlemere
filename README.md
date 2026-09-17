@@ -80,16 +80,17 @@ match, never written to an account, and discarded on room exit.
 
 ## How the game plays
 
-**The cast.** Six suspects (Miss Carmine, Brigadier Ochre, Dowager Ivory,
-Deacon Viridian, Baroness Indigo, Professor Mulberry) and six weapons
-(Candelabra, Letter Opener, Fire Poker, Duelling Pistol, Silk Cord, Marble
-Bust). Games of 7–8 players switch to an expanded set that adds two more of
-each, so hands stay a sensible size.
+**The cast.** Six suspects (Miss Ruby, Captain Gold, Lady Pearl, Mr Jade, Mrs
+Blue, Professor Violet) and six weapons (Candlestick, Letter Opener, Fire
+Poker, Pistol, Silk Scarf, Stone Statue). Games of 7–8 players switch to an
+expanded set that adds two more of each — Doctor Rose and Baron Bronze, Poison
+and the Sword — so hands stay a sensible size.
 
-**The house.** Nine rooms — Scullery, Salon, Glasshouse, Supper Room, Smoking
-Room, Reading Room, Parlour, Foyer, Bureau — around an open field of corridor
-squares, plus the Vaults and one more for larger games. Two pairs of rooms are
-linked by secret passages: Scullery ↔ Bureau, and Parlour ↔ Glasshouse.
+**The house.** Nine rooms — Kitchen, Music Room, Greenhouse, Dining Room, Game
+Room, Library, Sitting Room, Entrance Hall, Office — around an open field of
+corridor squares, plus the Wine Cellar and Trophy Room for larger games. Two
+pairs of rooms are linked by secret passages: Kitchen ↔ Office, and Sitting
+Room ↔ Greenhouse.
 
 **A turn.** Roll (1–12), then walk. Corridor squares occupied by other
 detectives block passage, so the board really does get crowded. Stopping in a

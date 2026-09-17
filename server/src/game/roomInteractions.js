@@ -11,7 +11,7 @@ export function acceptInteraction(game, playerId, input, now = Date.now()) {
   if (!input) return null;
   const player = game.players.find(p => p.id === playerId);
   if (game.status !== 'playing' || !player?.connected || player.position?.room !== input?.room) return null;
-  if (!game.board.rooms[input.room] || !['drawer','piano'].includes(input.kind) || input.kind === 'piano' && input.room !== 'Salon') return null;
+  if (!game.board.rooms[input.room] || !['drawer','piano'].includes(input.kind) || input.kind === 'piano' && input.room !== 'Music Room') return null;
   const state = session(game), key = `${input.room}:${input.kind}`, previous = state.props.get(key);
   if (now - (state.lastAction.get(playerId) ?? -Infinity) < 350) return null;
   if (input.kind === 'piano' && previous && now - previous.time < 1800) return null;

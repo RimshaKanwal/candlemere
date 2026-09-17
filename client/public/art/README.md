@@ -13,17 +13,17 @@ back to its emoji, so a partial set is fine.
 ```
 public/art/
   suspects/
-    miss-carmine.png       brigadier-ochre.png    dowager-ivory.png
-    deacon-viridian.png    baroness-indigo.png    professor-mulberry.png
-    doctor-cerise.png      monsieur-sepia.png
+    miss-ruby.png          captain-gold.png       lady-pearl.png
+    mr-jade.png            mrs-blue.png           professor-violet.png
+    doctor-rose.png        baron-bronze.png
   weapons/
-    candelabra.png         letter-opener.png      fire-poker.png
-    duelling-pistol.png    silk-cord.png          marble-bust.png
-    laudanum.png           antique-sabre.png
+    candlestick.png        letter-opener.png      fire-poker.png
+    pistol.png             silk-scarf.png         stone-statue.png
+    poison.png             sword.png
   rooms/
-    scullery.png    salon.png         glasshouse.png    supper-room.png
-    smoking-room.png reading-room.png parlour.png       foyer.png
-    bureau.png      vaults.png        menagerie.png
+    kitchen.png       music-room.png    greenhouse.png    dining-room.png
+    game-room.png     library.png       sitting-room.png  entrance-hall.png
+    office.png        wine-cellar.png   trophy-room.png
 ```
 
 - **suspects** render as round avatars (square images, ~square crop work best).

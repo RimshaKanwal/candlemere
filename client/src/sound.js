@@ -79,7 +79,7 @@ function playClip(src, volume = 0.6) {
 export const sfx = {
   footstep(room) {
     if (!enabled) return;
-    const stone = ['Scullery','Foyer','Glasshouse','Vaults'].includes(room);
+    const stone = ['Kitchen','Entrance Hall','Greenhouse','Wine Cellar'].includes(room);
     noise(0, stone ? .035 : .065, .012);
     beep(stone ? 180 : 85, 0, .07, { gain: .018 });
   },
@@ -169,15 +169,15 @@ export function createRoomAmbience() {
       filter=ac.createBiquadFilter();filter.type='lowpass';bed=ac.createGain();bed.gain.value=0;
       source.connect(filter).connect(bed).connect(channels.ambience);source.start();
     }
-    const rain=room==='Glasshouse', fire=room==='Parlour', now=ac.currentTime;
+    const rain=room==='Greenhouse', fire=room==='Sitting Room', now=ac.currentTime;
     filter.frequency.setTargetAtTime(rain?1700:fire?450:170,now,.35);
     bed.gain.setTargetAtTime(rain?.11:fire?.055:.009,now,.4);
     if(now-lastTick>1){
-      if(room==='Bureau')beep(1100,0,.025,{gain:.028,channel:'ambience'});
+      if(room==='Office')beep(1100,0,.025,{gain:.028,channel:'ambience'});
       if(fire)noise(0,.035,.025,'ambience');
       lastTick=now;
     }
-    if(room==='Salon'&&now-lastMusic>12){
+    if(room==='Music Room'&&now-lastMusic>12){
       [261.63,311.13,392,349.23].forEach((f,i)=>beep(f,i*.6,1.1,{gain:.009,channel:'music',type:'triangle'}));lastMusic=now;
     }
   }

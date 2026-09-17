@@ -43,45 +43,45 @@ function Art({ kind, name, emoji, className }) {
 const REACTIONS = ["😏 Suspicious...", "🤔 Hmm", "😱 No way!", "😂 lol", "🎯 Got you!", "😤 Ugh"];
 
 const SECRET_PASSAGES = {
-  Scullery: "Bureau",
-  Bureau: "Scullery",
-  Parlour: "Glasshouse",
-  Glasshouse: "Parlour",
+  Kitchen: "Office",
+  Office: "Kitchen",
+  "Sitting Room": "Greenhouse",
+  Greenhouse: "Sitting Room",
 };
 
 // Per-character identity — a colour + emoji used everywhere that character
 // appears (board token, seat avatar, suspect card) so players are instantly
 // recognisable instead of an ambiguous first initial.
 const CHARACTERS = {
-  "Miss Carmine": { color: "#c0392b", emoji: "🌹" },
-  "Brigadier Ochre": { color: "#c99a1e", emoji: "🎖️" },
-  "Dowager Ivory": { color: "#8a8f98", emoji: "🤍" },
-  "Deacon Viridian": { color: "#2e8b57", emoji: "🍀" },
-  "Baroness Indigo": { color: "#2f6fb0", emoji: "🦚" },
-  "Professor Mulberry": { color: "#7d4bb5", emoji: "🔮" },
-  "Doctor Cerise": { color: "#d64f9b", emoji: "🌸" },
-  "Monsieur Sepia": { color: "#6d4c3d", emoji: "🕵️" },
+  "Miss Ruby": { color: "#c0392b", emoji: "❤️" },
+  "Captain Gold": { color: "#c99a1e", emoji: "🎖️" },
+  "Lady Pearl": { color: "#8a8f98", emoji: "🤍" },
+  "Mr Jade": { color: "#2e8b57", emoji: "🍀" },
+  "Mrs Blue": { color: "#2f6fb0", emoji: "💙" },
+  "Professor Violet": { color: "#7d4bb5", emoji: "🔮" },
+  "Doctor Rose": { color: "#d64f9b", emoji: "🌸" },
+  "Baron Bronze": { color: "#6d4c3d", emoji: "🥉" },
 };
 const charMeta = (name) => CHARACTERS[name] || { color: "#4f6df5", emoji: "❓" };
 
 const ROOM_THEME = {
-  Scullery: { emoji: "🍳", c: "#b5462f" },
-  Salon: { emoji: "🎹", c: "#6d3f9c" },
-  Glasshouse: { emoji: "🪴", c: "#2e8b57" },
-  "Supper Room": { emoji: "🍽️", c: "#a9761b" },
-  "Smoking Room": { emoji: "🎱", c: "#1f6b45" },
-  "Reading Room": { emoji: "📚", c: "#7b4a1e" },
-  Parlour: { emoji: "🛋️", c: "#b23a48" },
-  Foyer: { emoji: "🏛️", c: "#3a5169" },
-  Bureau: { emoji: "🖋️", c: "#8a5a2b" },
-  Vaults: { emoji: "🍷", c: "#5a2a6b" },
-  Menagerie: { emoji: "🦌", c: "#b08d1e" },
+  Kitchen: { emoji: "🍳", c: "#b5462f" },
+  "Music Room": { emoji: "🎹", c: "#6d3f9c" },
+  Greenhouse: { emoji: "🪴", c: "#2e8b57" },
+  "Dining Room": { emoji: "🍽️", c: "#a9761b" },
+  "Game Room": { emoji: "🎱", c: "#1f6b45" },
+  Library: { emoji: "📚", c: "#7b4a1e" },
+  "Sitting Room": { emoji: "🛋️", c: "#b23a48" },
+  "Entrance Hall": { emoji: "🏛️", c: "#3a5169" },
+  Office: { emoji: "🖋️", c: "#8a5a2b" },
+  "Wine Cellar": { emoji: "🍷", c: "#5a2a6b" },
+  "Trophy Room": { emoji: "🏆", c: "#b08d1e" },
 };
 const roomTheme = (name) => ROOM_THEME[name] || { emoji: "🚪", c: "#555" };
 
 const WEAPON_EMOJI = {
-  Candelabra: "🕯️", "Letter Opener": "🔪", "Fire Poker": "🔥", "Duelling Pistol": "🔫",
-  "Silk Cord": "🪢", "Marble Bust": "🗿", Laudanum: "☠️", "Antique Sabre": "🗡️",
+  Candlestick: "🕯️", "Letter Opener": "🔪", "Fire Poker": "🔥", Pistol: "🔫",
+  "Silk Scarf": "🧣", "Stone Statue": "🗿", Poison: "☠️", Sword: "🗡️",
 };
 function cardMeta(card) {
   if (card.type === "suspect") return { icon: charMeta(card.value).emoji, color: charMeta(card.value).color };
@@ -760,7 +760,7 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
   };
 
   // The dead centre (classic games) gets a decorative "case file" crest.
-  const hasVaults = !!board.rooms.Vaults;
+  const hasCellar = !!board.rooms["Wine Cellar"];
 
   // A single absolutely-positioned layer so tokens can smoothly slide
   // between squares (and snap to a room's centre) instead of jumping —
@@ -792,7 +792,7 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
   return (
     <div className={`board-wrap ${shaking ? "shaking" : ""}`}>
       <div className={`board-cells ${zooming ? "zooming" : ""}`} style={gridStyle}>
-        {!hasVaults && (
+        {!hasCellar && (
           <div className="board-centerpiece" style={{ gridRow: "11 / 17", gridColumn: "10 / 16" }}>
             <div className="crest-envelope">C</div>
             <div className="crest-title">CANDLEMERE</div>
