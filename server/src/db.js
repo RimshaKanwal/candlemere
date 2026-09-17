@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -9,19 +10,19 @@ if (!CONNECTION_STRING) {
 
 const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(CONNECTION_STRING);
 
-// Managed Postgres (Render, Heroku, Supabase) terminates TLS with a
-// certificate the default trust store does not recognise, which is why
-// `rejectUnauthorized: false` is the usual workaround — but it also disables
-// the check that the server is who it claims to be. Set PGSSLROOTCERT to the
-// provider's CA bundle to verify properly; the opt-out is explicit and warns.
+// Remote Postgres is always reached over TLS, and the certificate is actually
+// verified: Neon (like most managed providers now) presents a certificate from
+// a public CA, which Node's own trust store already recognises. A provider that
+// uses a private CA can supply its bundle via PGSSLROOTCERT — that is a *path*,
+// as libpq defines it, so the file is read rather than passed through. If a
+// certificate cannot be verified the connection fails rather than silently
+// falling back to an unauthenticated one.
 function sslConfig() {
   if (isLocal) return false;
-  if (process.env.PGSSLROOTCERT) return { rejectUnauthorized: true, ca: process.env.PGSSLROOTCERT };
-  console.warn(
-    "[db] Connecting over TLS without verifying the server certificate. " +
-      "Set PGSSLROOTCERT to your provider's CA bundle to enable verification."
-  );
-  return { rejectUnauthorized: false };
+  if (process.env.PGSSLROOTCERT) {
+    return { rejectUnauthorized: true, ca: readFileSync(process.env.PGSSLROOTCERT, "utf8") };
+  }
+  return { rejectUnauthorized: true };
 }
 
 export const pool = new Pool({

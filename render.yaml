@@ -16,14 +16,12 @@ services:
       # production without it.
       - key: JWT_SECRET
         generateValue: true
-      # Postgres connection string, wired from the managed database below.
+      # Postgres connection string for the Neon database that holds the real
+      # accounts and leaderboard. sync: false means Render does NOT store it
+      # here — paste it into the service's Environment tab so the credential
+      # never lands in the repo. Letting Render provision its own database
+      # instead would point the live site at an empty one.
       - key: DATABASE_URL
-        fromDatabase:
-          name: cluedo-db
-          property: connectionString
+        sync: false
       - key: NODE_ENV
         value: production
-
-databases:
-  - name: cluedo-db
-    plan: free
