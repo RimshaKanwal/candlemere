@@ -4,6 +4,7 @@ import { socket } from '../socket';
 import { useEffect, useRef, useState } from 'react';
 import { createMansionEngine } from './mansion3d/engine';
 import { ROOM_STORIES } from './mansion3d/scenery';
+import { displayName } from '../displayNames';
 import './mansion3d/mansion3d.css';
 
 const ART_ORDER = ['Kitchen','Music Room','Greenhouse','Dining Room','Game Room','Library','Sitting Room','Entrance Hall','Office','Wine Cellar','Trophy Room'];
@@ -163,7 +164,7 @@ export default function Mansion3D(props) {
       <header className="explorer-header">
         <div className="explorer-location">
           <span className="explorer-kicker">{selected ? story?.[0] : 'Choose your next lead'}</span>
-          <h3>{selected || 'The mansion'}{here && <span className="location-pill">You are here</span>}</h3>
+          <h3>{displayName(selected) || 'The mansion'}{here && <span className="location-pill">You are here</span>}</h3>
         </div>
         <div className="explorer-header-actions">
           <details className="audio-settings"><summary>Sound mix</summary><div>{Object.entries(levels).map(([channel,value])=><label key={channel}>{channel}<input aria-label={`${channel} volume`} type="range" min="0" max="100" value={Math.round(value*100)} onChange={event=>{const next=Number(event.target.value)/100;setAudioLevel(channel,next);setLevels({...levels,[channel]:next});}}/><output>{Math.round(value*100)}%</output></label>)}<small>The speaker button mutes all sound.</small></div></details>
@@ -204,9 +205,9 @@ export default function Mansion3D(props) {
           const index = ART_ORDER.indexOf(name);
           const reachable = canMove && reachableRoomSet.has(name);
           const isHere = self?.position.room === name;
-          return <button key={name} className={`room-choice ${selected === name ? 'selected' : ''}`} aria-pressed={selected === name} aria-label={`Explore ${name}`} onClick={() => inspect(name)}>
+          return <button key={name} className={`room-choice ${selected === name ? 'selected' : ''}`} aria-pressed={selected === name} aria-label={`Explore ${displayName(name)}`} onClick={() => inspect(name)}>
             <span className="room-choice-art" aria-hidden="true" style={{backgroundPosition:`${index%4*100/3}% ${Math.floor(index/4)*50}%`}} />
-            <span className="room-choice-text"><b>{name}</b><small className={reachable ? 'reachable-text' : ''}>{isHere ? 'Your location' : reachable ? 'Reachable' : 'Look inside'}</small></span>
+            <span className="room-choice-text"><b>{displayName(name)}</b><small className={reachable ? 'reachable-text' : ''}>{isHere ? 'Your location' : reachable ? 'Reachable' : 'Look inside'}</small></span>
           </button>;
         })}
       </nav>

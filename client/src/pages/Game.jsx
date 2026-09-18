@@ -5,6 +5,7 @@ import Notepad, { notepadStorageKey } from "../components/Notepad";
 import CaseBriefing from "../components/CaseBriefing";
 import NotesReveal from "../components/NotesReveal";
 import { sfx, soundEnabled, toggleSound } from "../sound";
+import { displayName } from "../displayNames";
 
 const Mansion3D = lazy(() => import("../components/Mansion3D"));
 
@@ -41,6 +42,8 @@ function Art({ kind, name, emoji, className }) {
 }
 
 const REACTIONS = ["😏 Suspicious...", "🤔 Hmm", "😱 No way!", "😂 lol", "🎯 Got you!", "😤 Ugh"];
+
+// Friendly labels for the interface. Server values remain stable IDs.
 
 const SECRET_PASSAGES = {
   Kitchen: "Office",
@@ -395,8 +398,8 @@ export default function Game({ code, playerId, state, onLeave }) {
 
   const statusLine = pending ? (
     <span>
-      <strong>{pending.byName}</strong> suggested {pending.suggestion.suspect} · {pending.suggestion.weapon} ·{" "}
-      {pending.suggestion.room} —{" "}
+      <strong>{pending.byName}</strong> suggested {displayName(pending.suggestion.suspect)} · {displayName(pending.suggestion.weapon)} ·{" "}
+      {displayName(pending.suggestion.room)} —{" "}
       {pending.currentResponderId === playerId
         ? "your turn to answer"
         : `waiting for ${pending.currentResponderName}…`}
@@ -410,7 +413,7 @@ export default function Game({ code, playerId, state, onLeave }) {
   ) : lastResult?.accusationResult ? (
     <span>{lastResult.accusationResult.correct ? "Correct accusation! 🎉" : "Wrong accusation — out of the running."}</span>
   ) : isMyTurn ? (
-    <span>Your turn{self?.position.room ? ` — you're in the ${self.position.room}` : ""}.</span>
+    <span>Your turn{self?.position.room ? ` — you're in the ${displayName(self.position.room)}` : ""}.</span>
   ) : (
     <span>
       Waiting for <strong>{currentPlayer?.name}</strong>…
@@ -606,8 +609,8 @@ export default function Game({ code, playerId, state, onLeave }) {
       {mustRespond && (
         <Modal title="Can you disprove this?" onClose={() => {}}>
           <p>
-            <strong>{pending.byName}</strong> suggested <strong>{pending.suggestion.suspect}</strong> with the{" "}
-            <strong>{pending.suggestion.weapon}</strong> in the <strong>{pending.suggestion.room}</strong>.
+            <strong>{pending.byName}</strong> suggested <strong>{displayName(pending.suggestion.suspect)}</strong> with the{" "}
+            <strong>{displayName(pending.suggestion.weapon)}</strong> in the <strong>{displayName(pending.suggestion.room)}</strong>.
           </p>
           {pending.yourMatches?.length > 0 ? (
             <>
@@ -632,23 +635,23 @@ export default function Game({ code, playerId, state, onLeave }) {
       )}
 
       {suggestOpen && (
-        <Modal onClose={() => setSuggestOpen(false)} title={`Suggest (in the ${self.position.room})`}>
+        <Modal onClose={() => setSuggestOpen(false)} title={`Suggest (in the ${displayName(self.position.room)})`}>
           <form onSubmit={submitSuggestion} className="form">
             <label>
               Suspect
               <select value={suggestion.suspect} onChange={(e) => setSuggestion({ ...suggestion, suspect: e.target.value })} required>
                 <option value="" disabled>Choose...</option>
-                {state.cardSets.suspects.map((s) => <option key={s} value={s}>{s}</option>)}
+                {state.cardSets.suspects.map((s) => <option key={s} value={s}>{displayName(s)}</option>)}
               </select>
             </label>
             <label>
               Weapon
               <select value={suggestion.weapon} onChange={(e) => setSuggestion({ ...suggestion, weapon: e.target.value })} required>
                 <option value="" disabled>Choose...</option>
-                {state.cardSets.weapons.map((w) => <option key={w} value={w}>{w}</option>)}
+                {state.cardSets.weapons.map((w) => <option key={w} value={w}>{displayName(w)}</option>)}
               </select>
             </label>
-            <p className="hint">Room is fixed to your current location: {self.position.room}</p>
+            <p className="hint">Room is fixed to your current location: {displayName(self.position.room)}</p>
             <button type="submit" className="primary">Submit Suggestion</button>
           </form>
         </Modal>
@@ -661,21 +664,21 @@ export default function Game({ code, playerId, state, onLeave }) {
               Suspect
               <select value={accusation.suspect} onChange={(e) => setAccusation({ ...accusation, suspect: e.target.value })} required>
                 <option value="" disabled>Choose...</option>
-                {state.cardSets.suspects.map((s) => <option key={s} value={s}>{s}</option>)}
+                {state.cardSets.suspects.map((s) => <option key={s} value={s}>{displayName(s)}</option>)}
               </select>
             </label>
             <label>
               Weapon
               <select value={accusation.weapon} onChange={(e) => setAccusation({ ...accusation, weapon: e.target.value })} required>
                 <option value="" disabled>Choose...</option>
-                {state.cardSets.weapons.map((w) => <option key={w} value={w}>{w}</option>)}
+                {state.cardSets.weapons.map((w) => <option key={w} value={w}>{displayName(w)}</option>)}
               </select>
             </label>
             <label>
               Room
               <select value={accusation.room} onChange={(e) => setAccusation({ ...accusation, room: e.target.value })} required>
                 <option value="" disabled>Choose...</option>
-                {state.cardSets.rooms.map((r) => <option key={r} value={r}>{r}</option>)}
+                {state.cardSets.rooms.map((r) => <option key={r} value={r}>{displayName(r)}</option>)}
               </select>
             </label>
             <p className="hint">Warning: a wrong accusation eliminates you from winning.</p>
@@ -818,7 +821,7 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
               onClick={() => reachable && onMoveRoom(name)}
             >
               <div className="room-emoji"><Art kind="rooms" name={name} emoji={theme.emoji} /></div>
-              <div className="room-name">{name}</div>
+              <div className="room-name">{displayName(name)}</div>
               {SECRET_PASSAGES[name] && <span className="room-passage">↗ {SECRET_PASSAGES[name]}</span>}
             </div>
           );
@@ -839,7 +842,7 @@ function Board({ board, cell, players, canMove, reachableCellSet, reachableRoomS
                 tabIndex={reachable ? 0 : undefined}
                 aria-label={reachable ? `Move to row ${r + 1}, column ${c + 1}` : undefined}
                 onKeyDown={(e) => { if (reachable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onMoveCell(r, c); } }}
-                title={isDoor ? `Door — ${cellData.room}` : undefined}
+                title={isDoor ? `Door — ${displayName(cellData.room)}` : undefined}
                 onClick={() => reachable && onMoveCell(r, c)}
               />
             );
@@ -879,7 +882,7 @@ function LastSuggestionRecap({ lastSuggestion, players, selfId, shownCard }) {
     <div className="recap-card">
       <div className="recap-title">Last Suggestion</div>
       <div className="recap-line">
-        <strong>{byName}</strong>: {suggestion.suspect} · {suggestion.weapon} · {suggestion.room}
+        <strong>{byName}</strong>: {displayName(suggestion.suspect)} · {displayName(suggestion.weapon)} · {displayName(suggestion.room)}
       </div>
       {answered.length > 0 && (
         <div className="recap-answers">
@@ -898,7 +901,7 @@ function LastSuggestionRecap({ lastSuggestion, players, selfId, shownCard }) {
       )}
       {shownCard && (
         <div className="recap-shown">
-          Shown to you: <strong>{shownCard.value}</strong>
+          Shown to you: <strong>{displayName(shownCard.value)}</strong>
         </div>
       )}
     </div>
@@ -990,7 +993,7 @@ function PlayingCard({ card }) {
   return (
     <div className="play-card" style={{ "--cc": meta.color }}>
       <div className="play-card-icon"><Art kind={kind} name={card.value} emoji={meta.icon} /></div>
-      <div className="play-card-name">{card.value}</div>
+      <div className="play-card-name">{displayName(card.value)}</div>
     </div>
   );
 }

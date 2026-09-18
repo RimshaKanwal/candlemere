@@ -16,6 +16,9 @@ export const ROOM_STORIES = {
   "Wine Cellar": ['Down in the dark', 'The finest vintage. The worst place to be alone.', '#88728b'],
   'Trophy Room': ['For the collection', 'A room full of victories. And one terrible loss.', '#b09457'],
 };
+// Keyed by the character value the server sends, not the short label shown
+// in the interface — this is an index lookup, and a name that misses falls
+// back to entry 0, which would paint every avatar the same red.
 const NAMES = ['Miss Ruby','Captain Gold','Lady Pearl','Mr Jade','Mrs Blue','Professor Violet','Doctor Rose','Baron Bronze'];
 const COLORS = ['#b33249','#c39a35','#d1c8ac','#36735f','#416c9d','#7e4d94','#d2759b','#79513c'];
 export const characterColor = name => COLORS[Math.max(0, NAMES.indexOf(name))];
