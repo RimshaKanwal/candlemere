@@ -1,5 +1,6 @@
 import { gameStorage } from "../auth";
 import { useEffect, useRef, useState } from "react";
+import { displayName } from "../displayNames";
 
 // Scoped per room code so a new game starts with a blank sheet instead of
 // carrying over the previous game's markings — it was a single fixed key
@@ -134,7 +135,7 @@ function FragmentSection({ label, items, players, marks, onCycle, sectionKey }) 
                 onClick={() => onCycle(nameKey)}
                 title="Rule out / star this card"
               >
-                {item}
+                {displayName(item)}
                 {nameMark === "check" && " ⭐"}
               </button>
             </td>

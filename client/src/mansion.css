@@ -238,6 +238,15 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
    wraps instead of pushing the table past the edge. */
 .notepad .notepad-table { table-layout:fixed; }
 .notepad .notepad-table thead .notepad-rowhead { width:38%; }
-.notepad .notepad-colhead { white-space:normal; overflow-wrap:anywhere; }
+/* At eight players each column is about a twelfth of a 280px drawer, and
+   overflow-wrap:anywhere then broke every name into a one-letter-per-line
+   stack. Turning the headers on their side keeps whole words legible in a
+   column far narrower than the text is long, and costs height only once. */
+.notepad .notepad-colhead {
+  writing-mode:vertical-rl; white-space:nowrap; height:auto; max-height:104px;
+  overflow:hidden; text-overflow:ellipsis; padding:5px 1px; vertical-align:bottom;
+  text-align:right; font-size:10px; line-height:1.1;
+}
+.notepad .notepad-colhead .you-tag { writing-mode:horizontal-tb; display:inline-block; margin:3px 0 0; padding:0 3px; font-size:7px; }
 .notepad .rowname-btn { display:block; overflow:hidden; text-overflow:ellipsis; }
 .notepad .notepad-cell { min-width:0; }
