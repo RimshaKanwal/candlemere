@@ -16,6 +16,13 @@ export const ROOM_STORIES = {
   "Wine Cellar": ['Down in the dark', 'The finest vintage. The worst place to be alone.', '#88728b'],
   'Trophy Room': ['For the collection', 'A room full of victories. And one terrible loss.', '#b09457'],
 };
+
+// A room the server knows but this build does not — after a deploy where the
+// client and server disagree about the card set, for instance — used to throw
+// on the first lookup and take the whole 3D view down with it. One unfamiliar
+// room should cost that room's flavour, nothing more.
+const UNKNOWN_ROOM = ['An unfamiliar room', 'A part of the house you do not recognise.', '#7d8a80'];
+export const roomStory = name => ROOM_STORIES[name] || UNKNOWN_ROOM;
 // Keyed by the character value the server sends, not the short label shown
 // in the interface — this is an index lookup, and a name that misses falls
 // back to entry 0, which would paint every avatar the same red.
@@ -168,7 +175,7 @@ export function buildScenery(scene, board) {
     const {r0,r1,c0,c1}=room.rect,w=c1-c0+1,d=r1-r0+1;
     const x=(c0+c1+1)/2-board.cols/2,z=(r0+r1+1)/2-board.rows/2;
     const group=new THREE.Group();group.position.set(x,0,z);group.userData.room=name;scene.add(group);
-    const color=ROOM_STORIES[name][2];
+    const color=roomStory(name)[2];
     const floor=box(group,0,.045,0,w,.2,d,name==='Entrance Hall'||name==='Kitchen'?'#c0c5af':'#c0a378',name==='Entrance Hall'||name==='Kitchen'?'marble':'parquet');
     floor.material=floor.material.clone();extraMaterials.add(floor.material);floor.userData.target={room:name};floorTargets.push(floor);roomFloors.set(name,floor);
     box(group,0,-.17,0,w+.14,.28,d+.14,'#283c30','wood',true);
@@ -325,7 +332,7 @@ export function buildScenery(scene, board) {
     const handle=box(drawer,0,0,.09,.2,.035,.04,gold,'metal');
     const letter=box(group,px,.69,pz+.35,.45,.01,.3,'#eadbb1');letter.visible=false;
     drawer.userData.target={interaction:'drawer'};handle.userData.target={interaction:'drawer'};
-    interactions.push({room:name,kind:'drawer',mesh:drawer,letter,baseZ:drawer.position.z,open:false,label:'Open drawer',text:ROOM_STORIES[name][1]+' Inside: an old dinner invitation, dated long before this case. The house keeps its memories.'});
+    interactions.push({room:name,kind:'drawer',mesh:drawer,letter,baseZ:drawer.position.z,open:false,label:'Open drawer',text:roomStory(name)[1]+' Inside: an old dinner invitation, dated long before this case. The house keeps its memories.'});
   }
   function avatar(player){
     const group=new THREE.Group(),body=new THREE.Group();scene.add(group);group.add(body);

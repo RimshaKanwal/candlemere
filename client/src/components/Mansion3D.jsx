@@ -3,7 +3,7 @@ import { reachableDoorway } from './mansion3d/navigation';
 import { socket } from '../socket';
 import { useEffect, useRef, useState } from 'react';
 import { createMansionEngine } from './mansion3d/engine';
-import { ROOM_STORIES } from './mansion3d/scenery';
+import { roomStory } from './mansion3d/scenery';
 import { displayName } from '../displayNames';
 import './mansion3d/mansion3d.css';
 
@@ -31,7 +31,7 @@ export default function Mansion3D(props) {
   const actions = useRef(null), section = useRef(null);
   latest.current = props;
   const roomNames = Object.keys(board.rooms);
-  const story = ROOM_STORIES[selected];
+  const story = selected ? roomStory(selected) : null;
   const here = selected && self?.position.room === selected;
   const canEnter = !!selected && canMove && reachableRoomSet.has(selected);
   const canWalk = !!cell && canMove && reachableCellSet.has(`${cell.r},${cell.c}`);
