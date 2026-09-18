@@ -8,3 +8,10 @@ export const DISPLAY_NAMES = {
 };
 
 export const displayName = (value) => DISPLAY_NAMES[value] || value;
+
+export function formatDisplayText(text) {
+  if (!text) return text;
+  return Object.entries(DISPLAY_NAMES)
+    .sort(([a], [b]) => b.length - a.length)
+    .reduce((result, [internal, friendly]) => result.replaceAll(internal, friendly), text);
+}

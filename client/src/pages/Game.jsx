@@ -5,7 +5,7 @@ import Notepad, { notepadStorageKey } from "../components/Notepad";
 import CaseBriefing from "../components/CaseBriefing";
 import NotesReveal from "../components/NotesReveal";
 import { sfx, soundEnabled, toggleSound } from "../sound";
-import { displayName } from "../displayNames";
+import { displayName, formatDisplayText } from "../displayNames";
 
 const Mansion3D = lazy(() => import("../components/Mansion3D"));
 
@@ -618,7 +618,7 @@ export default function Game({ code, playerId, state, onLeave }) {
               <div className="hand-cards">
                 {pending.yourMatches.map((card) => (
                   <button key={card} className="show-card-btn" onClick={() => respondSuggestion("show", card)}>
-                    Show {card}
+                    Show {displayName(card)}
                   </button>
                 ))}
               </div>
@@ -1051,7 +1051,7 @@ function GameLog({ log }) {
     <div className="game-log">
       <ul>
         {[...log].reverse().map((entry, i) => (
-          <li key={i}>{entry.message}</li>
+          <li key={i}>{formatDisplayText(entry.message)}</li>
         ))}
       </ul>
     </div>
