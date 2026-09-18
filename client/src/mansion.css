@@ -183,7 +183,15 @@ button.secondary { border:1px solid var(--line); border-radius:5px; color:var(--
 .room-block .room-name { font-size:clamp(9px,.85vw,13px); text-shadow:0 2px 5px #000; }
 .play-card-icon .room-art { border-radius:2px; }
 @media(max-width:680px) { .room-block { padding:5px 2px; } .room-block .room-name { font-size:9px; } .room-block .room-emoji { inset:2px; } }
-@media(min-width:901px) and (max-height:780px) { .at-arrival { height:auto; min-height:100dvh; overflow:visible; } .arrival { min-height:680px; } }
+/* The arrival screen is a fixed-height stage (100dvh, overflow hidden), which
+   silently clips anything taller than the viewport rather than scrolling: a
+   full eight-seat guest list pushes the start button past the bottom edge with
+   no way to reach it. Letting the shell grow keeps the framed, full-height look
+   when the panel fits and hands the page a normal scrollbar when it does not.
+   This has to hold at every size — the old rule only rescued viewports under
+   780px tall, so a merely shortish window still lost the button. */
+.app-shell.at-arrival { height:auto; min-height:100dvh; overflow:visible; }
+@media(min-width:901px) and (max-height:780px) { .arrival { min-height:680px; } }
 
 .game-dialog::backdrop { background:#06100cbb; backdrop-filter:blur(7px); }
 
